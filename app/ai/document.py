@@ -1,4 +1,5 @@
 import re
+import unicodedata
 
 from .errors import AIOutputValidationError
 
@@ -71,41 +72,42 @@ def _content_tokens(value: str) -> set[str]:
     }
 
 
-def _token_stems(tokens: set[str]) -> set[str]:
-    """Keep a short lexical stem to tolerate common Albanian inflections."""
-    return {token[:6] if len(token) >= 6 else token for token in tokens}
+# Words a summary uses to talk about studying. They say nothing about the facts,
+# so they do not count against a point that is worded differently.
+_STUDY_WORDS = (
+    "përmbledhje material student koncept kupto kujto njoh dalloni shpjego "
+    "rëndësi rol përdorim mënyrë bazë kryesor pika provim tema ligjërata prezanton "
+    "përfshirë përfshijnë duhet mund llojet"
+)
 
 
-def is_grounded_in_source(
-    material: str,
-    candidate: str,
-    *,
-    minimum_shared_tokens: int = 2,
-    minimum_overlap: float = 0.25,
-) -> bool:
-    """Check conservative lexical grounding without requiring a verbatim quote.
+def _stem(token: str) -> str:
+    """A short stem without diacritics, to tolerate Albanian inflections."""
+    plain = unicodedata.normalize("NFKD", token)
+    return "".join(c for c in plain if not unicodedata.combining(c))[:5]
 
-    This is intentionally not a semantic truth guarantee. It ensures that a
-    paraphrase retains several meaningful source terms, while exact excerpts
-    continue to pass immediately. Claims with no source vocabulary are
-    rejected instead of being treated as supported.
+
+_STOP_STEMS = {_stem(word) for word in ALBANIAN_STOPWORDS}
+_STUDY_STEMS = {_stem(word) for word in _STUDY_WORDS.split()}
+
+
+def _stems(value: str) -> set[str]:
+    return {_stem(token) for token in _content_tokens(value)} - _STOP_STEMS
+
+
+def grounding_score(material: str, candidate: str) -> tuple[int, int]:
+    """(key terms of ``candidate`` found in ``material``, all its key terms).
+
+    This compares words, not meaning: it removes text about other subjects,
+    but not a false sentence built from the material's own words. An exact
+    quote always scores full marks.
     """
+    source = _stems(material)
+    terms = _stems(candidate)
     if contains_source_excerpt(material, candidate):
-        return True
-
-    source_tokens = _content_tokens(material)
-    candidate_tokens = _content_tokens(candidate)
-    if not source_tokens or not candidate_tokens:
-        return False
-
-    shared_tokens = _token_stems(source_tokens).intersection(
-        _token_stems(candidate_tokens)
-    )
-    overlap = len(shared_tokens) / len(candidate_tokens)
-    return (
-        len(shared_tokens) >= minimum_shared_tokens
-        and overlap >= minimum_overlap
-    )
+        return max(len(terms), 2), max(len(terms), 2)
+    terms -= _STUDY_STEMS - source
+    return len(terms & source), len(terms)
 
 
 # Scripts that never appear in normal Albanian text. Small local models

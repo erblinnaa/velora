@@ -126,7 +126,7 @@ def test_summary_rejects_unsupported_paraphrase():
         AIService(provider).summarize_material(material)
 
 
-def test_summary_rejects_unrelated_claim_even_with_valid_source_evidence():
+def test_summary_removes_unrelated_claim_and_keeps_the_rest():
     material = (
         "Fotosinteza është procesi me të cilin bimët prodhojnë ushqim. "
         "Ajo përdor dritën, ujin dhe dioksidin e karbonit. "
@@ -146,8 +146,10 @@ def test_summary_rejects_unrelated_claim_even_with_valid_source_evidence():
         }
     ])
 
-    with pytest.raises(AIOutputValidationError):
-        AIService(provider).summarize_material(material)
+    summary = AIService(provider).summarize_material(material)
+
+    assert "Procesi përdor dritën." in summary
+    assert "galaktika" not in summary
 
 
 def test_quiz_requires_four_unique_options_and_source_evidence():

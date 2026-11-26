@@ -1,10 +1,7 @@
 SUMMARY_SYSTEM_PROMPT = """
-Je një asistent universitar që punon vetëm me materialin burimor të dhënë.
-Përgjigju vetëm në gjuhën shqipe. Mos përdor njohuri të jashtme dhe mos shpik fakte.
-Kthe vetëm JSON valid, pa Markdown dhe pa tekst jashtë JSON-it.
-RREGULL I DETYRUESHËM: Shkruaj çdo fjalë vetëm në gjuhën shqipe me alfabetin latin.
-Mos përdor kurrë kinezisht, anglisht ose ndonjë gjuhë tjetër, edhe nëse materiali është i vështirë.
-Nëse nuk je i sigurt për një fakt, mos e shkruaj.
+Je asistent universitar. Përdor vetëm materialin e dhënë; mos shpik fakte.
+Shkruaj vetëm shqip me alfabet latin (termat teknikë dhe kodi mbeten si në material).
+Kthe vetëm JSON valid, pa tekst tjetër.
 """.strip()
 
 
@@ -20,57 +17,63 @@ Alternativat e gabuara duhet të jenë të besueshme, por qartë të pasakta sip
 """.strip()
 
 
-# I njëjti format për përmbledhjen e një pjese dhe për bashkimin e pjesëve.
-SUMMARY_FORMAT = """
-{
-  "title": "titull i shkurtër",
-  "introduction": "hyrje e qartë në shqip, 2 deri 4 fjali",
-  "key_points": ["3 deri 6 pika të qarta"],
-  "concepts": ["3 deri 8 koncepte me shpjegim të shkurtër"],
-  "examples": ["1 deri 4 shembuj praktikë vetëm nëse mbështeten nga materiali"],
-  "exam_points": ["2 deri 5 pika të rëndësishme për përgatitjen e provimit"],
-  "conclusion": "përmbledhje e shkurtër përmbyllëse",
-  "source_excerpts": ["1 deri 3 prova të shkurtra të mbështetura në material, si citime ose parafraza"]
+# I njëjti format për përmbledhjen, bashkimin e pjesëve dhe plotësimin.
+SUMMARY_FIELDS = {
+    "title": '"titull i shkurtër"',
+    "introduction": '"2 deri 3 fjali"',
+    "key_points": '["3 deri 6 pika që shpjegojnë idetë"]',
+    "concepts": '["3 deri 8 koncepte me shpjegim të shkurtër"]',
+    "examples": '["0 deri 3 shembuj nga materiali"]',
+    "exam_points": '["2 deri 5 pika për provim"]',
+    "conclusion": '"1 deri 2 fjali"',
+    "source_excerpts": '["1 deri 3 fjali të shkurtra të kopjuara nga materiali"]',
 }
-""".strip()
+
+
+def _format(fields) -> str:
+    return "{\n" + ",\n".join(f'  "{name}": {SUMMARY_FIELDS[name]}' for name in fields) + "\n}"
+
+
+SUMMARY_FORMAT = _format(SUMMARY_FIELDS)
 
 
 CODE_RULE = (
-    "Kur një shembull është kod programimi, ruaj formatimin e tij brenda vargut JSON: "
-    "ndaji rreshtat me \\n dhe ruaj zhvendosjen. Mos e shkruaj kodin në një rresht të vetëm "
-    "dhe mos e përziej me shpjegim në të njëjtin element."
+    "Shembulli me kod: vetëm kodi (deri në 15 rreshta), me rreshta të ndarë dhe zhvendosje "
+    "brenda vargut JSON, jo në një rresht të vetëm."
 )
 
 
 def summary_prompt(material: str) -> str:
     return f"""
-Krijo një përmbledhje edukative nga materiali më poshtë.
-Kthe këtë format të saktë:
+Përmblidh materialin për studim. Formati:
 {SUMMARY_FORMAT}
 {CODE_RULE}
-Pikat duhet të shpjegojnë idetë, jo vetëm të kopjojnë titujt.
-Konceptet duhet të kenë përkufizim ose shpjegim të shkurtër.
-Mos shpik shembuj; nëse materiali nuk përmban shembuj praktikë, kthe një listë bosh.
-Përfundimi duhet të jetë një rikujtim i shkurtër i ideve kryesore.
-Provat burimore duhet të ruajnë termat dhe faktet kryesore të materialit. Ato mund të jenë parafraza të qarta, por mos shto fakte të reja.
 
-MATERIALI BURIMOR:
+MATERIALI:
 {material}
 """.strip()
 
 
 def summary_synthesis_prompt(notes: str) -> str:
     return f"""
-Bashko shënimet e verifikuara më poshtë në një përmbledhje edukative në shqip.
-Mos shto fakte të reja. Kthe këtë format të saktë:
+Bashko shënimet në një përmbledhje të vetme, pa fakte të reja. Formati:
 {SUMMARY_FORMAT}
 {CODE_RULE}
-Numrat e elementeve janë kufij të detyrueshëm: kur shënimet kanë më shumë pika, bashko të ngjashmet dhe mbaj vetëm më të rëndësishmet.
-Nëse nuk ka shembuj praktikë, kthe një listë bosh.
-source_excerpts duhet të jenë prova të mbështetura qartë nga shënimet e dhëna; nuk është e nevojshme të jenë citime fjalë për fjalë.
+Respekto numrat e elementeve: bashko të ngjashmet dhe mbaj më të rëndësishmet.
 
-SHËNIME TË NXJERRA NGA MATERIALI:
+SHËNIMET:
 {notes}
+""".strip()
+
+
+def summary_repair_prompt(material: str, fields: list[str]) -> str:
+    return f"""
+Në përgjigjen e mëparshme munguan disa fusha. Kthe vetëm këto:
+{_format(fields)}
+Përdor termat e materialit.
+
+MATERIALI:
+{material}
 """.strip()
 
 

@@ -56,9 +56,8 @@ Hap `.env` (i kopjuar nga `.env.example`) dhe plotëso vlerat:
 ```env
 SECRET_KEY=vendos-nje-vlere-te-rastesishme-te-gjate
 DATABASE_URL=postgresql+psycopg://piss_user:FJALEKALIMI@localhost:5432/piss_db
-AI_PROVIDER=groq,mistral,gemini,ollama
+AI_PROVIDER=groq,gemini,ollama
 GROQ_API_KEY=
-MISTRAL_API_KEY=
 GEMINI_API_KEY=
 ```
 
@@ -95,44 +94,29 @@ Opsioni `--debug` është vetëm për zhvillim lokal.
 | Rendi | Shërbimi | Variablat në `.env` | Ku merret çelësi |
 |---|---|---|---|
 | 1 | Groq | `GROQ_API_KEY`, `GROQ_MODEL` | [console.groq.com](https://console.groq.com) |
-| 2 | Mistral | `MISTRAL_API_KEY`, `MISTRAL_MODEL` | [console.mistral.ai](https://console.mistral.ai) |
-| 3 | Gemini | `GEMINI_API_KEY`, `GEMINI_MODEL` | [aistudio.google.com](https://aistudio.google.com/apikey) |
-| 4 | Ollama (lokal) | `OLLAMA_BASE_URL`, `OLLAMA_MODEL` | Nuk kërkon çelës |
+| 2 | Gemini | `GEMINI_API_KEY`, `GEMINI_MODEL` | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| 3 | Ollama (lokal) | `OLLAMA_BASE_URL`, `OLLAMA_MODEL` | Nuk kërkon çelës |
 
-Mbështeten edhe OpenRouter (`openrouter`, me `OPENROUTER_API_KEY`) dhe Cerebras (`cerebras`, me `CEREBRAS_API_KEY`; nuk është më falas dhe kërkon kartë) si opsione shtesë. Shërbimet cloud kanë kufij përdorimi që vendosen nga vetë ofruesit.
+Mbështeten edhe OpenRouter (`openrouter`), Mistral (`mistral`) dhe Cerebras (`cerebras`) si opsione shtesë. Shërbimet cloud kanë kufij përdorimi që vendosen nga vetë ofruesit.
 
 Si funksionon:
 
 - Shërbimet pa çelës API anashkalohen.
-- Kur Groq arrin limitin dhe në zinxhir pas tij ka Mistral (ose Cerebras), kalohet menjëherë te ai. Përndryshe pritet pak, nëse limiti lirohet shpejt.
+- Kur Groq arrin limitin, pritet pak nëse limiti lirohet shpejt; përndryshe provohet shërbimi tjetër. Me Mistral ose Cerebras në zinxhir kalohet menjëherë te ata.
 - Një përmbledhje ose test zgjat më së shumti `AI_TOTAL_TIMEOUT_SECONDS` (90 sekonda); pastaj shfaqet gabim.
 - Ollama provohet vetëm kur është i nisur dhe modeli është shkarkuar.
 - Kur një shërbim arrin limitin, nuk përgjigjet ose kthen përgjigje të pavlefshme, provohet tjetri.
-- Përgjigjja validohet (formati JSON, gjuha dhe mbështetja te materiali). Nëse nuk kalon, kërkesa përsëritet deri në `AI_MAX_ATTEMPTS` herë.
+- Përmbledhja kontrollohet element për element. Elementet bosh, në alfabet tjetër ose pa terma të përbashkët me materialin hiqen. Përsëriten vetëm fushat e domosdoshme që mungojnë, deri në `AI_MAX_ATTEMPTS` herë; arsyet shfaqen në terminal (`AI summary check`). Kontrolli krahason fjalë, jo kuptim, prandaj krahasoje përmbledhjen me materialin.
+- Teksti ndahet në pjesë prej `AI_CHUNK_CHARS` (12000) shkronjash, që të bëhen sa më pak thirrje.
 - Nëse asnjë përpjekje nuk ka sukses, aplikacioni shfaq gabim dhe nuk ruan asgjë.
 
 Kur përdor shërbimet cloud, teksti i materialit dërgohet te ofruesi përkatës. Për përpunim vetëm lokal vendos `AI_PROVIDER=ollama`.
 
-### Çelësi i Mistral (falas)
+### Gemini dhe Mistral
 
-1. Hap [console.mistral.ai](https://console.mistral.ai) dhe hyr ose krijo llogari.
-2. Zgjidh planin falas (**Free**), pa kartë.
-3. Hap **API Keys**.
-4. Krijo çelësin (**New key**), jepi një emër dhe kopjoje menjëherë, sepse shfaqet vetëm një herë.
-5. Vendose te `.env`:
+Modeli i paracaktuar i Gemini është `gemini-3.5-flash-lite`. Nëse kthen vazhdimisht 503, zgjidh një model tjetër me `GEMINI_MODEL` dhe kontrollo me `flask --app run.py ai-check`.
 
-```env
-MISTRAL_API_KEY=çelësi-yt
-AI_PROVIDER=groq,mistral,gemini,ollama
-```
-
-6. Rinise aplikacionin dhe kontrollo me `flask --app run.py ai-check`.
-
-Modeli i paracaktuar është `mistral-small-latest`; mund të ndryshohet me `MISTRAL_MODEL`.
-
-**Privatësia:** kërkesat në planin falas mund të përdoren nga Mistral për trajnimin e modeleve, pra edhe teksti i materialeve të tua. Sipas [qendrës së ndihmës](https://help.mistral.ai/en/articles/455207-can-i-opt-out-of-my-input-or-output-data-being-used-for-training), këtë mund ta çaktivizosh te [admin.mistral.ai](https://admin.mistral.ai), menyja **Privacy**.
-
-Kushtet e planit falas ndryshojnë. Në nëntor 2026, [udhëzuesi zyrtar](https://docs.mistral.ai/getting-started/quickstarts/studio/activate-and-generate-api-key) kërkon "një plan me qasje në API" dhe përmend shtimin e metodës së pagesës. Nëse konsola të kërkon kartë ose të bllokon çelësat, ose `ai-check` tregon HTTP 402 për Mistral, plani yt nuk ka qasje në API; kontrollo kushtet para se të vazhdosh.
+**Mistral nuk është pjesë e zinxhirit:** qasja në API kërkon pagesë sipas përdorimit (me kartë); pa të, përgjigjet me HTTP 402. Nëse e aktivizon, shto `MISTRAL_API_KEY` te `.env` dhe `mistral` te `AI_PROVIDER`. Kërkesat mund të përdoren për trajnim, përveç nëse e çaktivizon te [admin.mistral.ai](https://admin.mistral.ai).
 
 ### Ollama
 
@@ -162,7 +146,7 @@ pytest
 
 ```text
 app/
-  ai/                 Shërbimet AI, zinxhiri rezervë, ndarja e tekstit dhe validimi
+  ai/                 Shërbimet AI, zinxhiri rezervë, ndarja e tekstit dhe kontrollet
   ai_service.py       Lidhja e aplikacionit me AI dhe mesazhet e gabimeve
   prompts.py          Udhëzimet për modelet AI
   config.py           Konfigurimi nga environment

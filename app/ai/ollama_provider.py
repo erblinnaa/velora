@@ -82,7 +82,8 @@ class OllamaProvider(AIProvider):
                 ],
                 "stream": False,
                 "format": "json",
-                "options": {"temperature": 0.2},
+                # The default context is too small for one 12000 character part.
+                "options": {"temperature": 0.2, "num_ctx": 8192, "num_predict": 4096},
             },
         )
 

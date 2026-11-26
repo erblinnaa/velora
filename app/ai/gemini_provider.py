@@ -158,7 +158,7 @@ class GeminiProvider(AIProvider):
             contents=user_prompt,
             system_instruction=system_prompt,
             response_mime_type="application/json",
-            max_output_tokens=8192,
+            max_output_tokens=4096,
         )
         content = self._response_text(response)
 

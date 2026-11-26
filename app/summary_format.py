@@ -22,8 +22,22 @@ def _fenced(code: str) -> str:
     return f"{FENCE}\n{code}\n{FENCE}"
 
 
+def restore_line_breaks(code: str) -> str:
+    r"""Disa modele e shkruajnë ndërrimin e rreshtit si dy shenjat \ dhe n.
+
+    Kur kodi nuk ka asnjë rresht të vërtetë, ato kthehen në rresht të ri,
+    përveç brenda vargjeve të kodit (p.sh. "Rreshti\n" në Java).
+    """
+    if "\n" in code or "\\n" not in code:
+        return code
+    return re.sub(r'("(?:\\.|[^"\\])*")|\\n', lambda m: m[1] or "\n", code)
+
+
 def format_example(item: str) -> list[str]:
     """Një shembull si rreshta të përmbledhjes: pika teksti dhe blloqe kodi."""
+    restored = restore_line_breaks(item)
+    if looks_like_code(restored):
+        item = restored
     parts = item.replace("\r\n", "\n").split(FENCE)
     lines = []
     for index, part in enumerate(parts):

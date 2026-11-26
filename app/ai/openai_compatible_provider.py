@@ -30,6 +30,10 @@ from .errors import (
 
 logger = logging.getLogger(__name__)
 
+# A summary needs a few thousand tokens; the limit leaves room for reasoning and
+# stops a runaway answer from using up the free tokens per minute.
+MAX_OUTPUT_TOKENS = 4096
+
 
 # Known OpenAI-compatible services. The model can always be overridden in .env.
 PRESETS = {
@@ -220,22 +224,27 @@ class OpenAICompatibleProvider(AIProvider):
 
     def generate_json(self, system_prompt: str, user_prompt: str):
         logger.info("AI request: provider=%s model=%s", self.name, self.model)
-        response = self._post(
-            "/chat/completions",
-            {
-                "model": self.model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                "temperature": 0.2,
-                "max_tokens": 8192,
-                "response_format": {"type": "json_object"},
-            },
-        )
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0.2,
+            "max_tokens": MAX_OUTPUT_TOKENS,
+            "response_format": {"type": "json_object"},
+        }
+        if "gpt-oss" in self.model:
+            # Less hidden reasoning means fewer tokens and faster answers.
+            payload["reasoning_effort"] = "low"
+        response = self._post("/chat/completions", payload)
         usage = response.get("usage") or {}
         logger.info(
-            "AI response: provider=%s total_tokens=%s", self.name, usage.get("total_tokens")
+            "AI response: provider=%s prompt_tokens=%s completion_tokens=%s total_tokens=%s",
+            self.name,
+            usage.get("prompt_tokens"),
+            usage.get("completion_tokens"),
+            usage.get("total_tokens"),
         )
         return self._parse_json(self._extract_content(response))
 

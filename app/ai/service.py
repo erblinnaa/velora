@@ -9,16 +9,17 @@ from .document import (
     compact_whitespace,
     contains_source_excerpt,
     has_foreign_script,
-    is_grounded_in_source,
     normalize_text,
 )
 from .errors import AIOutputValidationError, AIProviderResponseError
+from .summary_checks import FIELDS, clean_summary, merge_summary, missing_fields
 from ..summary_format import format_example, one_line
 from ..prompts import (
     QUIZ_SYSTEM_PROMPT,
     SUMMARY_SYSTEM_PROMPT,
     quiz_prompt,
     summary_prompt,
+    summary_repair_prompt,
     summary_synthesis_prompt,
 )
 
@@ -26,17 +27,11 @@ from ..prompts import (
 logger = logging.getLogger(__name__)
 
 
-def _summary_validation_error(message: str, rule: str) -> AIOutputValidationError:
-    """Log only a safe rule identifier; never log model output or source text."""
-    logger.warning("AI summary validation failed: rule=%s", rule)
-    return AIOutputValidationError(message)
-
-
 @dataclass
 class AIService:
     provider: AIProvider
     max_input_chars: int = 30000
-    chunk_chars: int = 6000
+    chunk_chars: int = 12000
     # How many times one request is tried when the model returns output that
     # fails validation (wrong language, invalid JSON, unsupported facts).
     # The application sets this from AI_MAX_ATTEMPTS (default 3).
@@ -59,11 +54,13 @@ class AIService:
                     )
                 return validate(payload)
             except (AIOutputValidationError, AIProviderResponseError) as exc:
+                # Mesazhet e këtyre gabimeve janë tekste fikse të aplikacionit.
                 logger.warning(
-                    "AI output rejected, retrying: attempt=%s/%s error=%s",
+                    "AI output rejected: attempt=%s/%s error=%s reason=%s",
                     attempt,
                     attempts,
                     type(exc).__name__,
+                    exc,
                 )
                 last_error = exc
         raise last_error
@@ -73,7 +70,7 @@ class AIService:
         chunks = chunk_text(material, self.chunk_chars)
 
         partials = [
-            self._generate_summary(chunk)
+            self._generate_summary(summary_prompt(chunk), chunk, chunk)
             for chunk in chunks
         ]
 
@@ -84,11 +81,8 @@ class AIService:
                 f"PJESA {index}:\n{self._summary_as_notes(item)}"
                 for index, item in enumerate(partials, start=1)
             )
-            result = self._generate_validated(
-                SUMMARY_SYSTEM_PROMPT,
-                summary_synthesis_prompt(notes),
-                material,
-                lambda payload: self._validate_summary(payload, material),
+            result = self._generate_summary(
+                summary_synthesis_prompt(notes), notes, material
             )
 
         return self._format_summary(result)
@@ -135,12 +129,43 @@ class AIService:
             "correct_index": order.index(question["correct_index"]),
         }
 
-    def _generate_summary(self, material: str) -> dict:
-        return self._generate_validated(
-            SUMMARY_SYSTEM_PROMPT,
-            summary_prompt(material),
-            material,
-            lambda payload: self._validate_summary(payload, material),
+    def _generate_summary(self, prompt: str, prompt_source: str, source: str) -> dict:
+        """One summary. A retry asks only for the required fields still missing.
+
+        ``prompt_source`` is the text sent to the model and sent again in a
+        retry; ``source`` is the material every item is checked against.
+        """
+        attempts = max(1, int(self.max_attempts))
+        collected = {}
+        for attempt in range(1, attempts + 1):
+            wanted = missing_fields(collected) if collected else []
+            try:
+                payload = self.provider.generate_json(
+                    SUMMARY_SYSTEM_PROMPT,
+                    summary_repair_prompt(prompt_source, wanted) if wanted else prompt,
+                )
+            except AIProviderResponseError as exc:
+                logger.warning(
+                    "AI summary check: attempt=%s/%s item=answer check=unusable_response reason=%s",
+                    attempt, attempts, exc,
+                )
+                continue
+
+            kept, rejections = clean_summary(payload, source, wanted or FIELDS)
+            for rejection in rejections:
+                logger.warning("AI summary check: attempt=%s/%s %s", attempt, attempts, rejection)
+            merge_summary(collected, kept)
+            missing = missing_fields(collected)
+            logger.info(
+                "AI summary attempt: attempt=%s/%s removed=%s missing=%s",
+                attempt, attempts, len(rejections), ",".join(missing) or "none",
+            )
+            if not missing:
+                return collected
+
+        raise AIOutputValidationError(
+            "Përmbledhja nuk kaloi kontrollin kundrejt materialit. Mungojnë: "
+            + ", ".join(missing_fields(collected))
         )
 
     @staticmethod
@@ -160,125 +185,6 @@ class AIService:
         if summary.get("conclusion"):
             parts.append(f"Përfundim: {summary['conclusion']}")
         return "\n".join(parts)
-
-    @staticmethod
-    def _validate_summary(payload: dict, source: str) -> dict:
-        if not isinstance(payload, dict):
-            raise _summary_validation_error(
-                "Përmbledhja e modelit nuk është objekt JSON.", "object_json"
-            )
-
-        title = payload.get("title")
-        key_points = payload.get("key_points")
-        concepts = payload.get("concepts")
-        excerpts = payload.get("source_excerpts")
-        introduction = payload.get("introduction")
-        examples = payload.get("examples")
-        exam_points = payload.get("exam_points")
-        conclusion = payload.get("conclusion")
-
-        if not isinstance(title, str) or not title.strip():
-            raise _summary_validation_error("Përmbledhja nuk ka titull valid.", "title")
-        if not isinstance(key_points, list) or not 3 <= len(key_points) <= 6:
-            raise _summary_validation_error(
-                "Përmbledhja nuk ka pika kryesore valide.", "key_points_shape"
-            )
-        if not isinstance(concepts, list) or not 3 <= len(concepts) <= 8:
-            raise _summary_validation_error(
-                "Përmbledhja nuk ka koncepte valide.", "concepts_shape"
-            )
-        if not isinstance(excerpts, list) or not 1 <= len(excerpts) <= 3:
-            raise _summary_validation_error(
-                "Përmbledhja nuk ka prova burimore.", "source_excerpts_shape"
-            )
-
-        all_items = [*key_points, *concepts, *excerpts]
-        if any(not isinstance(item, str) or not item.strip() for item in all_items):
-            raise _summary_validation_error(
-                "Përmbledhja përmban fusha bosh ose të pavlefshme.",
-                "empty_required_item",
-            )
-
-        if introduction is not None and (
-            not isinstance(introduction, str) or not introduction.strip()
-        ):
-            raise _summary_validation_error("Përmbledhja nuk ka hyrje të vlefshme.", "introduction")
-        if examples is not None and (
-            not isinstance(examples, list)
-            or len(examples) > 4
-            or any(not isinstance(item, str) or not item.strip() for item in examples)
-        ):
-            raise _summary_validation_error(
-                "Shembujt e përmbledhjes nuk janë të vlefshëm.", "examples"
-            )
-        if exam_points is not None and (
-            not isinstance(exam_points, list)
-            or not 2 <= len(exam_points) <= 5
-            or any(not isinstance(item, str) or not item.strip() for item in exam_points)
-        ):
-            raise _summary_validation_error(
-                "Pikat për provim nuk janë të vlefshme.", "exam_points"
-            )
-        if conclusion is not None and (
-            not isinstance(conclusion, str) or not conclusion.strip()
-        ):
-            raise _summary_validation_error(
-                "Përfundimi i përmbledhjes nuk është i vlefshëm.", "conclusion"
-            )
-
-        if any(
-            not is_grounded_in_source(
-                source,
-                excerpt,
-                minimum_shared_tokens=2,
-                minimum_overlap=0.25,
-            )
-            for excerpt in excerpts
-        ):
-            raise _summary_validation_error(
-                "Përmbledhja nuk përmban prova të verifikueshme nga materiali.",
-                "source_evidence",
-            )
-
-        claims = [("title", title)]
-        claims.extend(("key_point", item) for item in key_points)
-        claims.extend(("concept", item) for item in concepts)
-        if introduction:
-            claims.append(("introduction", introduction))
-        if examples:
-            claims.extend(("example", item) for item in examples)
-        if exam_points:
-            claims.extend(("exam_point", item) for item in exam_points)
-        if conclusion:
-            claims.append(("conclusion", conclusion))
-
-        for field, claim in claims:
-            if not is_grounded_in_source(
-                source,
-                claim,
-                minimum_shared_tokens=1,
-                minimum_overlap=0.15,
-            ):
-                raise _summary_validation_error(
-                    "Përmbledhja përmban një pohim që nuk mbështetet nga materiali.",
-                    f"claim_grounding:{field}",
-                )
-
-        result = {
-            "title": title.strip(),
-            "key_points": [item.strip() for item in key_points],
-            "concepts": [item.strip() for item in concepts],
-            "source_excerpts": [item.strip() for item in excerpts],
-        }
-        if introduction is not None:
-            result["introduction"] = introduction.strip()
-        if examples is not None:
-            result["examples"] = [item.strip() for item in examples]
-        if exam_points is not None:
-            result["exam_points"] = [item.strip() for item in exam_points]
-        if conclusion is not None:
-            result["conclusion"] = conclusion.strip()
-        return result
 
     @staticmethod
     def _format_summary(summary: dict) -> str:

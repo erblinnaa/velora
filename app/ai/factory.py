@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def provider_names() -> list[str]:
     """Read AI_PROVIDER, which can be one name or a comma separated chain.
 
-    Examples: "ollama", "gemini", "groq,cerebras,mistral,gemini,ollama".
+    Examples: "ollama", "gemini", "groq,gemini,ollama".
     """
     raw = current_app.config.get("AI_PROVIDER", "ollama") or "ollama"
     names = [part.strip().lower() for part in raw.split(",") if part.strip()]
@@ -36,7 +36,7 @@ def _build_single(name: str):
     if name == "gemini":
         return GeminiProvider(
             api_key=config.get("GEMINI_API_KEY", ""),
-            model=config.get("GEMINI_MODEL", "gemini-3.8-flash"),
+            model=config.get("GEMINI_MODEL", "gemini-3.5-flash-lite"),
             timeout=config.get("GEMINI_TIMEOUT_SECONDS", 30),
         )
 
