@@ -1,0 +1,22 @@
+{# Pjesët e përbashkëta të formularëve të hyrjes dhe regjistrimit #}
+
+{% macro check() %}
+<svg class="ok" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+{% endmacro %}
+
+{# Pa JavaScript butoni i syrit mbetet i fshehur #}
+{% macro eye() %}
+<button class="eb" type="button" aria-label="Shfaq fjalëkalimin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+{% endmacro %}
+
+{# Mesazhet flash dhe gabimet e serverit; data-worry e shqetëson bufin një herë #}
+{% macro alerts(errors) %}
+{% for category, message in get_flashed_messages(with_categories=true) %}
+<div class="alert{% if category == 'success' %} success{% endif %}" role="{{ 'alert' if category == 'danger' else 'status' }}"{% if category == 'danger' %} data-worry{% endif %}><p>{{ message }}</p></div>
+{% endfor %}
+{% if errors %}
+<div class="alert" role="alert" data-worry>
+  {% for name, message in errors.items() %}<p id="{{ name }}-error">{{ message }}</p>{% endfor %}
+</div>
+{% endif %}
+{% endmacro %}

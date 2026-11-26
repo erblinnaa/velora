@@ -1,24 +1,30 @@
-{% extends "base.html" %}
+{% extends "auth/_base.html" %}
+{% import "auth/_parts.html" as auth %}
 {% block title %}Hyr në llogari{% endblock %}
-{% block public_content %}
-<div class="narrow">
-  <h1>Hyr në llogari</h1>
-  <p class="lead">Vazhdo aty ku e le studimin.</p>
+{% block card %}
+{% include "partials/_owl.html" %}
 
-  <form method="post" class="panel form-stack">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    {% if errors.form %}<p class="form-error" role="alert">{{ errors.form }}</p>{% endif %}
-    <div class="field">
-      <label for="email">Email</label>
-      <input id="email" type="email" name="email" value="{{ request.form.get('email', '') }}" autocomplete="email" required>
-    </div>
-    <div class="field">
-      <label for="password">Fjalëkalimi</label>
-      <input id="password" type="password" name="password" autocomplete="current-password" required>
-    </div>
-    <button class="button" type="submit" data-loading="Po hyn…">Hyr</button>
-  </form>
+<form method="post" class="box" id="card" data-loading="Duke hyrë…">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <h1 class="title"><a href="{{ url_for('main.index') }}">Velora</a></h1>
+  <p class="sub"><span class="on-day">Bufi të pret. Hyr të mësosh.</span><span class="on-night">Mirë se u ktheve. Bufi s'ka fjetur.</span></p>
 
-  <p class="after-form">Nuk ke llogari? <a href="{{ url_for('main.register') }}">Regjistrohu</a></p>
-</div>
+  <label class="lb" for="email"><span>Email</span></label>
+  <div class="fw">
+    <input class="in" id="email" type="email" name="email" value="{{ request.form.get('email', '') }}" placeholder="ti@universiteti.edu" autocomplete="email" required data-rule="email">
+    {{ auth.check() }}
+  </div>
+  <div class="hint" id="email-hint" aria-live="polite">Shkruaj një adresë emaili të vlefshme.</div>
+
+  <div class="lb"><label for="password">Fjalëkalimi</label><span class="note">Harrove?</span></div>
+  <div class="fw">
+    <input class="in" id="password" type="password" name="password" placeholder="••••••••" autocomplete="current-password" required data-rule="password" data-min="1">
+    {{ auth.eye() }}
+  </div>
+  <div class="hint" id="password-hint" aria-live="polite">Shkruaj fjalëkalimin.</div>
+
+  {{ auth.alerts(errors) }}
+  <button class="go" type="submit"><span class="spin" aria-hidden="true"></span><span class="gt">Hyr</span></button>
+  <div class="foot">E re këtu? <a href="{{ url_for('main.register') }}">Krijo llogari</a></div>
+</form>
 {% endblock %}

@@ -295,11 +295,6 @@ input[type="radio"] { accent-color: var(--accent); width: 18px; height: 18px; ma
 .lead { margin: 10px 0 24px; color: var(--ink-soft); font-size: 1.0625rem; }
 .after-form { margin-top: 18px; }
 .error-code { margin-top: 32px; font-size: .8125rem; }
-.landing { max-width: 720px; margin-inline: auto; }
-.landing h1 { font-size: clamp(2rem, 5vw, 3rem); }
-.landing .lead { max-width: 56ch; }
-.landing h2 { margin: 56px 0 14px; }
-.landing .step { grid-template-columns: 56px minmax(0, 1fr); }
 
 @media (max-width: 1000px) {
   .columns { grid-template-columns: minmax(0, 1fr); }
@@ -335,8 +330,6 @@ input[type="radio"] { accent-color: var(--accent); width: 18px; height: 18px; ma
   .columns { gap: 36px; }
   .public-content { padding-top: 32px; }
   .panel { padding: 18px; }
-  .landing .step { grid-template-columns: 44px minmax(0, 1fr); }
-  .landing .step-number { grid-row: auto; }
   .history thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .history, .history tbody, .history tr, .history td { display: block; }
   .history tr { padding: 14px 0; border-bottom: 1px solid var(--line); }

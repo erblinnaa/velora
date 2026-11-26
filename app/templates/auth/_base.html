@@ -1,0 +1,21 @@
+{% import "_macros.html" as ui %}
+<!doctype html>
+<html lang="sq" data-theme="light">
+<head>
+  {% set page_title %}{% block title %}{% endblock %}{% endset %}
+  {{ ui.head(page_title, stylesheet='css/owl.css') }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+  <script src="{{ url_for('static', filename='js/auth-owl.js') }}" defer></script>
+</head>
+<body>
+<main id="vz">
+  {% include "partials/_theme_init.html" %}
+  <div class="sky" id="stage">
+    <div class="moon nt" aria-hidden="true"></div>
+    <div class="nt" aria-hidden="true"><span class="s" style="left:8%;top:14%"></span><span class="s" style="left:22%;top:30%;animation-delay:.8s"></span><span class="s" style="left:36%;top:8%;animation-delay:1.6s"></span><span class="s" style="left:62%;top:20%;animation-delay:.4s"></span><span class="s" style="left:14%;top:55%;animation-delay:2.2s"></span><span class="s" style="left:88%;top:48%;animation-delay:1.2s"></span><span class="s" style="left:78%;top:70%;animation-delay:2.6s"></span></div>
+
+    {% block card %}{% endblock %}
+  </div>
+</main>
+</body>
+</html>

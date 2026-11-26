@@ -1,0 +1,14 @@
+{# Vendoset menjëherë pas hapjes së elementit #vz #}
+  <script>
+    // Para shfaqjes: zgjedhja e ruajtur e temës, përndryshe natë nga 19:00 deri në 06:00.
+    (function () {
+      var theme = null;
+      try { theme = localStorage.getItem('velora-theme'); } catch (e) {}
+      if (theme !== 'light' && theme !== 'dark') {
+        var hour = new Date().getHours();
+        theme = hour >= 19 || hour < 6 ? 'dark' : 'light';
+      }
+      document.documentElement.dataset.theme = theme;
+      document.getElementById('vz').classList.toggle('night', theme === 'dark');
+    })();
+  </script>

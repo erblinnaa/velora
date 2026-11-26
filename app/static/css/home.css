@@ -1,0 +1,31 @@
+/* Faqja kryesore për vizitorët. Ngjyrat dhe bufi: owl.css. */
+.pg{position:relative;min-height:100vh;overflow:hidden;background:var(--bg);color:var(--txt);transition:background .5s,color .5s}
+.inner{max-width:960px;margin:0 auto}
+.bar{display:flex;align-items:center;justify-content:space-between;padding:20px 26px}
+.logo{display:flex;align-items:center;gap:8px;font-family:"Source Serif 4",Georgia,serif;font-size:22px;color:var(--txt);text-decoration:none}
+.nav{display:flex;align-items:center;gap:20px;font-size:14px}
+.nav a{color:var(--txt);text-decoration:none}
+.tm{background:none;border:none;color:var(--page-mut);font-size:14px;cursor:pointer;font-family:inherit;padding:0;text-decoration:underline;text-underline-offset:3px}
+.hero{position:relative;padding:140px 26px 10px}
+.hl{position:relative;display:inline-block;font-family:"Source Serif 4",Georgia,serif;font-weight:400;font-size:58px;line-height:1.05;letter-spacing:-.8px;max-width:720px;margin:0}
+.owl{position:absolute;width:140px;height:131px;left:280px;top:-122px}
+.lead{font-size:17px;line-height:1.65;color:var(--page-mut);margin-top:28px;max-width:520px}
+.cta{display:flex;align-items:center;gap:22px;margin-top:26px;flex-wrap:wrap}
+.p{background:var(--acc);color:#fff;border:2px solid var(--ink);box-shadow:0 4px 0 var(--ink);border-radius:12px;padding:12px 22px;font-size:15px;font-weight:500;text-decoration:none}
+.p:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+#vz.night .p{color:var(--ink);border-color:#FFE7A8;box-shadow:0 4px 0 #FFE7A8}
+.lk{font-size:15px;color:var(--txt);text-decoration:none;border-bottom:1.5px solid var(--acc);padding-bottom:2px}
+.trail{position:relative;padding:70px 26px 80px}
+.trail h2{font-family:"Source Serif 4",Georgia,serif;font-size:17px;font-weight:400;font-style:italic;color:var(--page-mut);margin:0 0 6px}
+.path{display:block;width:100%;height:80px}
+.stops{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:-6px}
+.stop .n{font-family:"Source Serif 4",Georgia,serif;font-style:italic;font-size:15px;color:var(--acc)}
+.stop h3{font-family:"Source Serif 4",Georgia,serif;font-size:22px;font-weight:400;margin:2px 0 0}
+.stop p{margin:6px 0 0;font-size:14px;line-height:1.55;color:var(--page-mut)}
+@media (max-width:640px){.hero{padding-top:120px}.hl{font-size:38px}.owl{left:150px;width:110px;height:103px;top:-96px}.stops{grid-template-columns:1fr}.path{display:none}}
+
+/* Mesazhet, p.sh. pas daljes nga llogaria */
+.msg{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:0 26px;padding:10px 14px;border-radius:10px;background:var(--card);color:var(--ink);font-size:14px}
+.msg p{margin:0}
+.msg button{border:0;background:none;padding:0;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+@media (prefers-reduced-motion:reduce){.pg{transition:none}}

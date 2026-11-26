@@ -1,0 +1,21 @@
+/* Të përbashkëtat e faqeve me bufin: hyrja, regjistrimi dhe faqja kryesore. */
+*{box-sizing:border-box}
+body{margin:0;font-family:"IBM Plex Sans",system-ui,sans-serif}
+
+/* Ngjyrat ditë/natë. --mut dhe --line vlejnë brenda kartës, --page-* drejtpërdrejt mbi sfond. */
+#vz{--bg:#FBF3E4;--body:#9A6447;--dark:#7A4E36;--belly:#F2D9B8;--fea:#D9B48A;--eye:#FFF8EC;--acc:#E07A3F;--cap:#2D2320;--cheek:#E8907A;--card:#fff;--ink:#2D2320;--mut:#6B5A52;--line:#EADCC8;--btn:#E07A3F;--btnT:#fff;--branch:#7A4E36;--txt:#2D2320;--page-mut:#7A6A60;--page-line:#E6D6BE}
+#vz.night{--bg:#17183B;--body:#8C6A9E;--dark:#6E4F82;--belly:#EFE3F2;--fea:#C9B3D3;--eye:#FFF8E6;--acc:#F2B33D;--cap:#1E1C33;--cheek:#E9A3B8;--card:#FFFDF7;--ink:#1E1C33;--mut:#5C5878;--line:#ECE6D6;--btn:#1E1C33;--btnT:#FFE7A8;--branch:#5B3B2A;--txt:#FFF3DC;--page-mut:#A9A3C9;--page-line:#34356A}
+
+/* Qielli i natës */
+.nt{opacity:0;transition:opacity .5s}#vz.night .nt{opacity:1}
+.dy{transition:opacity .3s}#vz.night .dy{opacity:0}
+@keyframes tw{0%,100%{opacity:.2}50%{opacity:1}}
+.s{position:absolute;width:3px;height:3px;border-radius:50%;background:#FFE7A8;animation:tw 3s infinite}
+
+/* Bufi */
+.owl *{transform-box:fill-box}
+.b{fill:var(--body)}.d{fill:var(--dark)}.be{fill:var(--belly)}.ey{fill:var(--eye)}.ac{fill:var(--acc)}.cp{fill:var(--cap)}.ck{fill:var(--cheek)}
+.pupil{transition:transform .14s ease-out,opacity .2s}
+.lid{transform-origin:50% 0;transform:scaleY(0);transition:transform .08s}
+.owl.blink .lid{transform:scaleY(1)}
+@media (prefers-reduced-motion:reduce){.owl,.owl *,.s{animation:none!important;transition:none!important}}

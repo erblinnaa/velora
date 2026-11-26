@@ -1,25 +1,51 @@
-{% extends "base.html" %}
-{% block title %}Studimi yt në një vend{% endblock %}
-{% block public_content %}
-<div class="landing">
-  <h1>Lëndët, materialet dhe testet e tua në një vend</h1>
-  <p class="lead">Ruaj shënimet e ligjëratave, krijo përmbledhje me AI dhe kontrollo veten me teste të ndërtuara nga materiali yt.</p>
-  <div class="actions">
-    <a class="button" href="{{ url_for('main.register') }}">Krijo llogari</a>
-    <a class="button button-secondary" href="{{ url_for('main.login') }}">Hyr në llogari</a>
-  </div>
-
-  <h2>Si funksionon</h2>
-  <ol class="step-list">
-    {% for title, text in [
-      ('Krijo lëndën', 'Një lëndë mban bashkë materialet dhe testet e saj.'),
-      ('Shto material', 'Ngjit shënimet ose ngarko një PDF me tekst.'),
-      ('Testo veten', 'Përgjigju pyetjeve dhe shiko rezultatet te historiku.')] %}
-    <li class="step">
-      <span class="step-number" aria-hidden="true">{{ loop.index }}</span>
-      <div><h3>{{ title }}</h3><p>{{ text }}</p></div>
-    </li>
-    {% endfor %}
-  </ol>
+{% import "_macros.html" as ui %}
+<!doctype html>
+<html lang="sq" data-theme="light">
+<head>
+  {{ ui.head('Studimi yt në një vend', stylesheet='css/owl.css') }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+  <script src="{{ url_for('static', filename='js/home-owl.js') }}" defer></script>
+</head>
+<body>
+<div id="vz">
+  {% include "partials/_theme_init.html" %}
+<div class="pg" id="stage">
+<div class="nt" aria-hidden="true"><span class="s" style="left:6%;top:12%"></span><span class="s" style="left:34%;top:7%;animation-delay:.8s"></span><span class="s" style="left:58%;top:20%;animation-delay:1.6s"></span><span class="s" style="left:76%;top:9%;animation-delay:.4s"></span><span class="s" style="left:92%;top:26%;animation-delay:2.2s"></span><span class="s" style="left:84%;top:44%;animation-delay:1.2s"></span></div>
+<div class="inner">
+<header class="bar">
+<a class="logo" href="{{ url_for('main.index') }}"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="16" r="13" class="b"/><circle cx="10.5" cy="14" r="4.5" class="ey"/><circle cx="19.5" cy="14" r="4.5" class="ey"/><circle cx="10.5" cy="14.5" r="2" style="fill:var(--ink)"/><circle cx="19.5" cy="14.5" r="2" style="fill:var(--ink)"/><path d="M15 17 L13.5 19.5 L16.5 19.5Z" class="ac"/></svg>Velora</a>
+<nav class="nav" aria-label="Kryesore"><button class="tm" id="tm" type="button" hidden>natë</button><a href="{{ url_for('main.login') }}">Hyr</a></nav>
+</header>
+<main>
+{% for category, message in get_flashed_messages(with_categories=true) %}
+<div class="msg" role="{{ 'alert' if category == 'danger' else 'status' }}"><p>{{ message }}</p><button type="button" data-dismiss>Mbyll</button></div>
+{% endfor %}
+<section class="hero">
+<h1 class="hl">Lëndët, materialet dhe testet e tua në një vend.
+{% with home = true %}{% include "partials/_owl.html" %}{% endwith %}
+</h1>
+<p class="lead">Ngjit shënimet e ligjëratës ose një PDF. Velora të bën një përmbledhje dhe një test me pyetje që dalin vetëm nga materiali yt, në shqip.</p>
+<div class="cta"><a class="p" href="{{ url_for('main.register') }}">Krijo llogari falas</a><a class="lk" href="{{ url_for('main.login') }}">Kam llogari, dua të hyj</a></div>
+</section>
+<section class="trail">
+<h2>si funksionon, me tre hapa</h2>
+<svg class="path" viewBox="0 0 600 70" preserveAspectRatio="none" aria-hidden="true">
+<path d="M10 40 C 90 10, 140 62, 210 36 S 330 8, 400 38 S 520 64, 590 30" fill="none" style="stroke:var(--page-line)" stroke-width="2.5" stroke-dasharray="2 9" stroke-linecap="round"/>
+<g style="fill:var(--acc)">
+<g transform="translate(18 38) rotate(-30)"><ellipse rx="3.2" ry="4.5"/><circle cx="-4" cy="-6" r="1.6"/><circle cx="0" cy="-7.5" r="1.6"/><circle cx="4" cy="-6" r="1.6"/></g>
+<g transform="translate(214 36) rotate(10)"><ellipse rx="3.2" ry="4.5"/><circle cx="-4" cy="-6" r="1.6"/><circle cx="0" cy="-7.5" r="1.6"/><circle cx="4" cy="-6" r="1.6"/></g>
+<g transform="translate(404 38) rotate(-15)"><ellipse rx="3.2" ry="4.5"/><circle cx="-4" cy="-6" r="1.6"/><circle cx="0" cy="-7.5" r="1.6"/><circle cx="4" cy="-6" r="1.6"/></g>
+</g>
+</svg>
+<div class="stops">
+<div class="stop"><div class="n">i.</div><h3>Krijo lëndën</h3><p>P.sh. "Biologji". Aty rrinë bashkë materialet dhe testet.</p></div>
+<div class="stop"><div class="n">ii.</div><h3>Shto materialin</h3><p>Ngjit shënimet ose ngarko PDF-në e ligjëratës.</p></div>
+<div class="stop"><div class="n">iii.</div><h3>Testo veten</h3><p>Zgjidh testin dhe shiko ku gabove, me fjalinë nga materiali.</p></div>
 </div>
-{% endblock %}
+</section>
+</main>
+</div>
+</div>
+</div>
+</body>
+</html>

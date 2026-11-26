@@ -1,32 +1,38 @@
-{% extends "base.html" %}
+{% extends "auth/_base.html" %}
 {% import "_macros.html" as ui %}
+{% import "auth/_parts.html" as auth %}
 {% block title %}Krijo llogari{% endblock %}
-{% block public_content %}
-<div class="narrow">
-  <h1>Krijo llogari</h1>
-  <p class="lead">Të duhen vetëm emri, email-i dhe një fjalëkalim.</p>
+{% block card %}
+{% include "partials/_owl.html" %}
 
-  <form method="post" class="panel form-stack">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <input type="hidden" name="theme" value="light" data-theme-field>
-    <div class="field">
-      <label for="full_name">Emri i plotë</label>
-      <input id="full_name" type="text" name="full_name" value="{{ request.form.get('full_name', '') }}" autocomplete="name" minlength="2" maxlength="120" required {{ ui.invalid(errors, 'full_name') }}>
-      {{ ui.field_error(errors, 'full_name') }}
-    </div>
-    <div class="field">
-      <label for="email">Email</label>
-      <input id="email" type="email" name="email" value="{{ request.form.get('email', '') }}" autocomplete="email" maxlength="255" required {{ ui.invalid(errors, 'email') }}>
-      {{ ui.field_error(errors, 'email') }}
-    </div>
-    <div class="field">
-      <label for="password">Fjalëkalimi <span class="hint">të paktën 8 karaktere</span></label>
-      <input id="password" type="password" name="password" autocomplete="new-password" minlength="8" required {{ ui.invalid(errors, 'password') }}>
-      {{ ui.field_error(errors, 'password') }}
-    </div>
-    <button class="button" type="submit" data-loading="Po krijohet llogaria…">Krijo llogari</button>
-  </form>
+<form method="post" class="box" id="card" data-loading="Duke krijuar llogarinë…">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="theme" value="light" data-theme-field>
+  <h1 class="title"><a href="{{ url_for('main.index') }}">Velora</a></h1>
+  <p class="sub">Krijo llogarinë, bufi të ndihmon të mësosh.</p>
 
-  <p class="after-form">Ke llogari? <a href="{{ url_for('main.login') }}">Hyr këtu</a></p>
-</div>
+  <label class="lb" for="full_name"><span>Emri i plotë</span></label>
+  <div class="fw">
+    <input class="in plain" id="full_name" type="text" name="full_name" value="{{ request.form.get('full_name', '') }}" placeholder="Emri dhe mbiemri" autocomplete="name" minlength="2" maxlength="120" required data-rule="name" {{ ui.invalid(errors, 'full_name') }}>
+  </div>
+  <div class="hint" id="full_name-hint" aria-live="polite">Shkruaj emrin e plotë (2 deri në 120 karaktere).</div>
+
+  <label class="lb" for="email"><span>Email</span></label>
+  <div class="fw">
+    <input class="in" id="email" type="email" name="email" value="{{ request.form.get('email', '') }}" placeholder="ti@universiteti.edu" autocomplete="email" maxlength="255" required data-rule="email" {{ ui.invalid(errors, 'email') }}>
+    {{ auth.check() }}
+  </div>
+  <div class="hint" id="email-hint" aria-live="polite">Shkruaj një adresë emaili të vlefshme.</div>
+
+  <label class="lb" for="password"><span>Fjalëkalimi</span><span class="note">së paku 8 karaktere</span></label>
+  <div class="fw">
+    <input class="in" id="password" type="password" name="password" placeholder="••••••••" autocomplete="new-password" minlength="8" required data-rule="password" data-min="8" {{ ui.invalid(errors, 'password') }}>
+    {{ auth.eye() }}
+  </div>
+  <div class="hint" id="password-hint" aria-live="polite">Fjalëkalimi duhet të ketë së paku 8 karaktere.</div>
+
+  {{ auth.alerts(errors) }}
+  <button class="go" type="submit"><span class="spin" aria-hidden="true"></span><span class="gt">Krijo llogari</span></button>
+  <div class="foot">Ke llogari? <a href="{{ url_for('main.login') }}">Hyr</a></div>
+</form>
 {% endblock %}
