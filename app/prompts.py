@@ -20,11 +20,9 @@ Alternativat e gabuara duhet të jenë të besueshme, por qartë të pasakta sip
 """.strip()
 
 
-def summary_prompt(material: str) -> str:
-    return f"""
-Krijo një përmbledhje edukative nga materiali më poshtë.
-Kthe këtë format të saktë:
-{{
+# I njëjti format për përmbledhjen e një pjese dhe për bashkimin e pjesëve.
+SUMMARY_FORMAT = """
+{
   "title": "titull i shkurtër",
   "introduction": "hyrje e qartë në shqip, 2 deri 4 fjali",
   "key_points": ["3 deri 6 pika të qarta"],
@@ -33,7 +31,23 @@ Kthe këtë format të saktë:
   "exam_points": ["2 deri 5 pika të rëndësishme për përgatitjen e provimit"],
   "conclusion": "përmbledhje e shkurtër përmbyllëse",
   "source_excerpts": ["1 deri 3 prova të shkurtra të mbështetura në material, si citime ose parafraza"]
-}}
+}
+""".strip()
+
+
+CODE_RULE = (
+    "Kur një shembull është kod programimi, ruaj formatimin e tij brenda vargut JSON: "
+    "ndaji rreshtat me \\n dhe ruaj zhvendosjen. Mos e shkruaj kodin në një rresht të vetëm "
+    "dhe mos e përziej me shpjegim në të njëjtin element."
+)
+
+
+def summary_prompt(material: str) -> str:
+    return f"""
+Krijo një përmbledhje edukative nga materiali më poshtë.
+Kthe këtë format të saktë:
+{SUMMARY_FORMAT}
+{CODE_RULE}
 Pikat duhet të shpjegojnë idetë, jo vetëm të kopjojnë titujt.
 Konceptet duhet të kenë përkufizim ose shpjegim të shkurtër.
 Mos shpik shembuj; nëse materiali nuk përmban shembuj praktikë, kthe një listë bosh.
@@ -48,7 +62,11 @@ MATERIALI BURIMOR:
 def summary_synthesis_prompt(notes: str) -> str:
     return f"""
 Bashko shënimet e verifikuara më poshtë në një përmbledhje edukative në shqip.
-Mos shto fakte të reja. Përdor të njëjtin format JSON si përmbledhja normale.
+Mos shto fakte të reja. Kthe këtë format të saktë:
+{SUMMARY_FORMAT}
+{CODE_RULE}
+Numrat e elementeve janë kufij të detyrueshëm: kur shënimet kanë më shumë pika, bashko të ngjashmet dhe mbaj vetëm më të rëndësishmet.
+Nëse nuk ka shembuj praktikë, kthe një listë bosh.
 source_excerpts duhet të jenë prova të mbështetura qartë nga shënimet e dhëna; nuk është e nevojshme të jenë citime fjalë për fjalë.
 
 SHËNIME TË NXJERRA NGA MATERIALI:

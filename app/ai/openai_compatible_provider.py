@@ -10,6 +10,7 @@ The API key is never logged and never included in an error message.
 
 import json
 import logging
+import re
 import socket
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -112,7 +113,7 @@ class OpenAICompatibleProvider(AIProvider):
             with self._opener(request, timeout=self.timeout) as response:
                 raw = response.read().decode("utf-8")
         except HTTPError as exc:
-            raise self._map_http_error(exc.code) from exc
+            raise self._map_http_error(exc) from exc
         except (TimeoutError, socket.timeout) as exc:
             raise AIProviderTimeout(
                 f"{self.label} nuk u përgjigj brenda {self.timeout} sekondave."
@@ -137,15 +138,39 @@ class OpenAICompatibleProvider(AIProvider):
                 f"{self.label} ktheu përgjigje që nuk është JSON."
             ) from exc
 
-    def _map_http_error(self, code: int):
-        logger.warning("AI HTTP error: provider=%s status=%s", self.name, code)
+    @staticmethod
+    def _error_detail(error: HTTPError) -> str:
+        """The service's own explanation, for the log only. IDs are removed."""
+        try:
+            message = json.loads(error.read().decode("utf-8"))["error"]["message"]
+        except Exception:
+            return ""
+        return re.sub(r"\b(org|proj|req|user)_\w+", r"\1_…", str(message))[:300]
+
+    @staticmethod
+    def _retry_after(error: HTTPError) -> float | None:
+        try:
+            return float(error.headers.get("retry-after"))
+        except (AttributeError, TypeError, ValueError):
+            return None
+
+    def _map_http_error(self, error: HTTPError):
+        code = error.code
+        logger.warning(
+            "AI HTTP error: provider=%s model=%s status=%s detail=%s",
+            self.name,
+            self.model,
+            code,
+            self._error_detail(error),
+        )
         if code in {401, 403}:
             return AIProviderAuthenticationError(
                 f"Çelësi API i {self.label} nuk është i vlefshëm."
             )
         if code == 429:
             return AIProviderRateLimitError(
-                f"{self.label} arriti limitin falas. Provo më vonë."
+                f"{self.label} arriti limitin falas. Provo më vonë.",
+                retry_after=self._retry_after(error),
             )
         if code == 404:
             return AIProviderModelUnavailable(
@@ -207,6 +232,10 @@ class OpenAICompatibleProvider(AIProvider):
                 "max_tokens": 8192,
                 "response_format": {"type": "json_object"},
             },
+        )
+        usage = response.get("usage") or {}
+        logger.info(
+            "AI response: provider=%s total_tokens=%s", self.name, usage.get("total_tokens")
         )
         return self._parse_json(self._extract_content(response))
 

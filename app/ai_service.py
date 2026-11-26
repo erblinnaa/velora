@@ -1,7 +1,9 @@
 
 from flask import current_app
 
+from .ai.deadline import Deadline
 from .ai.errors import (
+    AIDeadlineExceeded,
     AIOutputValidationError,
     AIProviderAuthenticationError,
     AIProviderConfigurationError,
@@ -14,6 +16,7 @@ from .ai.errors import (
     AIProviderUnavailable,
 )
 from .ai.factory import create_provider, provider_names
+from .ai.fallback_provider import FallbackProvider
 from .ai.service import AIService
 
 
@@ -22,8 +25,13 @@ class AIServiceError(Exception):
 
 
 def _service():
+    provider = create_provider()
+    # Edhe një shërbim i vetëm kalon nga zinxhiri, që të vlejë kufiri i kohës.
+    if not isinstance(provider, FallbackProvider):
+        provider = FallbackProvider([provider])
+    provider.deadline = Deadline(current_app.config["AI_TOTAL_TIMEOUT_SECONDS"])
     return AIService(
-        provider=create_provider(),
+        provider=provider,
         max_input_chars=current_app.config["AI_MAX_INPUT_CHARS"],
         chunk_chars=current_app.config["AI_CHUNK_CHARS"],
         max_attempts=current_app.config.get("AI_MAX_ATTEMPTS", 3),
@@ -35,7 +43,7 @@ def _raise_public_error(exc):
     only_local = names == ["ollama"]
     is_chain = len(names) > 1
 
-    if isinstance(exc, AIProviderConfigurationError):
+    if isinstance(exc, (AIProviderConfigurationError, AIDeadlineExceeded)):
         message = str(exc)
     elif isinstance(exc, AIProviderAuthenticationError):
         message = "Çelësi API i shërbimit AI nuk është i vlefshëm. Kontrollo .env."

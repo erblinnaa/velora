@@ -62,6 +62,8 @@ class Subject(db.Model):
     description = db.Column(db.Text, default="")
     color = db.Column(db.String(20), default="#1f4d3a", nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), default=utc_now, nullable=False)
+    # E mbushur kur studenti klikon "Fshi"; shiko soft_delete.py.
+    deleted_at = db.Column(db.DateTime(timezone=True))
 
     owner = db.relationship("User", back_populates="subjects")
     materials = db.relationship(
@@ -91,6 +93,8 @@ class Material(db.Model):
     mime_type = db.Column(db.String(100))
     summary = db.Column(db.Text)
     created_at = db.Column(db.DateTime(timezone=True), default=utc_now, nullable=False)
+    # E mbushur kur studenti klikon "Fshi"; shiko soft_delete.py.
+    deleted_at = db.Column(db.DateTime(timezone=True))
 
     subject = db.relationship("Subject", back_populates="materials")
 

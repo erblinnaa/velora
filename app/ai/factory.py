@@ -37,7 +37,7 @@ def _build_single(name: str):
         return GeminiProvider(
             api_key=config.get("GEMINI_API_KEY", ""),
             model=config.get("GEMINI_MODEL", "gemini-3.8-flash"),
-            timeout=timeout,
+            timeout=config.get("GEMINI_TIMEOUT_SECONDS", 30),
         )
 
     if name in PRESETS:
@@ -49,7 +49,7 @@ def _build_single(name: str):
             api_key=config.get(f"{prefix}_API_KEY", ""),
             model=config.get(f"{prefix}_MODEL") or preset["default_model"],
             base_url=config.get(f"{prefix}_BASE_URL") or preset["base_url"],
-            timeout=timeout,
+            timeout=config.get(f"{prefix}_TIMEOUT_SECONDS") or min(timeout, 30),
         )
 
     raise AIProviderConfigurationError(

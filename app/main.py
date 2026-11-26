@@ -21,7 +21,7 @@ from werkzeug.utils import secure_filename
 
 from .ai_service import AIServiceError, generate_quiz, summarize_material
 from .extensions import db
-from .models import Material, Quiz, QuizAttempt, Subject, User
+from .models import Material, Quiz, QuizAttempt, Subject, User, utc_now
 from .overview import (
     activity_grid,
     average_percent,
@@ -33,6 +33,8 @@ from .overview import (
     subject_rows,
     todo_items,
 )
+from .soft_delete import UNDO_SECONDS, deleted_material, deleted_subject, purge_expired
+from .summary_format import parse_summary
 
 
 main_bp = Blueprint("main", __name__)
@@ -101,6 +103,17 @@ def owned_quiz(quiz_id):
         )
         .first_or_404()
     )
+
+
+@main_bp.before_app_request
+def purge_deleted():
+    if request.endpoint != "static" and current_user.is_authenticated:
+        purge_expired(current_user.id)
+
+
+def flash_undo(text, restore_url):
+    """Mesazhi me butonin "Anulo", që shfaqet për pak sekonda."""
+    flash({"text": text, "url": restore_url, "seconds": UNDO_SECONDS}, "undo")
 
 
 @main_bp.app_context_processor
@@ -381,11 +394,25 @@ def edit_subject(subject_id):
 def delete_subject(subject_id):
     subject = owned_subject(subject_id)
 
-    db.session.delete(subject)
+    subject.deleted_at = utc_now()
     db.session.commit()
 
-    flash("Lënda dhe të dhënat e saj u fshinë.", "success")
+    flash_undo("Lënda u fshi.", url_for("main.restore_subject", subject_id=subject_id))
     return redirect(url_for("main.dashboard"))
+
+
+@main_bp.post("/subjects/<int:subject_id>/restore")
+@login_required
+def restore_subject(subject_id):
+    subject = deleted_subject(subject_id, current_user.id)
+    if not subject:
+        flash("Koha për anulim ka kaluar.", "warning")
+        return redirect(url_for("main.dashboard"))
+
+    subject.deleted_at = None
+    db.session.commit()
+    flash("Lënda u kthye.", "success")
+    return redirect(url_for("main.subject_detail", subject_id=subject_id))
 
 
 def render_subject(subject, errors=None):
@@ -473,11 +500,25 @@ def delete_material(material_id):
     material = owned_material(material_id)
     subject_id = material.subject_id
 
-    db.session.delete(material)
+    material.deleted_at = utc_now()
     db.session.commit()
 
-    flash("Materiali u fshi.", "success")
+    flash_undo("Materiali u fshi.", url_for("main.restore_material", material_id=material_id))
     return redirect(url_for("main.subject_detail", subject_id=subject_id))
+
+
+@main_bp.post("/materials/<int:material_id>/restore")
+@login_required
+def restore_material(material_id):
+    material = deleted_material(material_id, current_user.id)
+    if not material:
+        flash("Koha për anulim ka kaluar.", "warning")
+        return redirect(url_for("main.dashboard"))
+
+    material.deleted_at = None
+    db.session.commit()
+    flash("Materiali u kthye.", "success")
+    return redirect(url_for("main.subject_detail", subject_id=material.subject_id))
 
 
 @main_bp.post("/materials/<int:material_id>/summarize")
@@ -514,7 +555,11 @@ def material_summary(material_id):
             url_for("main.subject_detail", subject_id=material.subject_id)
         )
 
-    return render_template("subjects/summary.html", material=material)
+    return render_template(
+        "subjects/summary.html",
+        material=material,
+        blocks=parse_summary(material.summary),
+    )
 
 
 @main_bp.post("/materials/<int:material_id>/summary/delete")

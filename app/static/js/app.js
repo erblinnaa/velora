@@ -89,6 +89,10 @@
   document.querySelectorAll('[data-dismiss]').forEach((button) => {
     button.addEventListener('click', () => button.closest('.flash').remove());
   });
+  // "Anulo" hiqet kur kalon afati i serverit.
+  document.querySelectorAll('[data-expires]').forEach((message) => {
+    setTimeout(() => message.remove(), Number(message.dataset.expires) * 1000);
+  });
   document.querySelector('[data-back]')?.addEventListener('click', () => window.history.back());
 
   /* Formularët: konfirmimi, gjendja e pritjes dhe bllokimi i dërgimit të dyfishtë */

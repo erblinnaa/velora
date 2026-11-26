@@ -6,6 +6,7 @@ from urllib.request import Request, urlopen
 
 from .base import AIProvider
 from .errors import (
+    AIProviderError,
     AIProviderResponseError,
     AIProviderTimeout,
     AIProviderUnavailable,
@@ -13,6 +14,9 @@ from .errors import (
 
 
 logger = logging.getLogger(__name__)
+
+# Asking the local service which models exist must be quick.
+READY_TIMEOUT_SECONDS = 3
 
 
 class OllamaProvider(AIProvider):
@@ -27,7 +31,7 @@ class OllamaProvider(AIProvider):
     def model(self) -> str:
         return self._model
 
-    def _request(self, path: str, payload: dict | None = None) -> dict:
+    def _request(self, path: str, payload: dict | None = None, timeout: float | None = None) -> dict:
         url = urljoin(self.base_url, path.lstrip("/"))
         data = None
         headers = {"Accept": "application/json"}
@@ -39,7 +43,7 @@ class OllamaProvider(AIProvider):
         request = Request(url, data=data, headers=headers, method="POST" if data else "GET")
 
         try:
-            with urlopen(request, timeout=self.timeout) as response:
+            with urlopen(request, timeout=timeout or self.timeout) as response:
                 raw = response.read().decode("utf-8")
         except HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")[:500]
@@ -96,15 +100,30 @@ class OllamaProvider(AIProvider):
                 "Modeli lokal ktheu JSON të pavlefshëm."
             ) from exc
 
-    def healthcheck(self) -> dict:
-        logger.info("AI healthcheck: provider=%s model=%s endpoint=/api/tags", self.name, self.model)
-        response = self._request("/api/tags")
-        models = response.get("models", [])
-        model_names = {
+    def _installed_models(self, timeout: float | None = None) -> set[str]:
+        response = self._request("/api/tags", timeout=timeout)
+        return {
             item.get("name")
-            for item in models
+            for item in response.get("models", [])
             if isinstance(item, dict) and item.get("name")
         }
+
+    def ready(self) -> bool:
+        """False when Ollama is not running or the model has not been pulled."""
+        try:
+            installed = self._installed_models(READY_TIMEOUT_SECONDS)
+        except (AIProviderError, ValueError) as exc:
+            logger.warning("Ollama skipped: reason=not_running error=%s", type(exc).__name__)
+            return False
+        wanted = self.model if ":" in self.model else f"{self.model}:latest"
+        if wanted not in installed:
+            logger.warning("Ollama skipped: reason=model_not_pulled model=%s", self.model)
+            return False
+        return True
+
+    def healthcheck(self) -> dict:
+        logger.info("AI healthcheck: provider=%s model=%s endpoint=/api/tags", self.name, self.model)
+        model_names = self._installed_models()
         return {
             "provider": self.name,
             "model": self.model,

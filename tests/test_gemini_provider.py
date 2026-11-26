@@ -61,7 +61,7 @@ def test_factory_selects_gemini_without_constructing_ollama(monkeypatch):
 
     assert provider.name == "gemini"
     assert calls == [
-        {"api_key": "test-key", "model": "gemini-test", "timeout": 120}
+        {"api_key": "test-key", "model": "gemini-test", "timeout": 30}
     ]
 
 

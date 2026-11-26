@@ -22,6 +22,11 @@ class Config:
     AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "120"))
     # Local models on a CPU are slow, so Ollama gets its own, longer timeout.
     OLLAMA_TIMEOUT_SECONDS = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "600"))
+    # The longest a student waits for one summary or test, all calls included.
+    AI_TOTAL_TIMEOUT_SECONDS = int(os.getenv("AI_TOTAL_TIMEOUT_SECONDS", "90"))
+    # Per call limits: Groq is the main service, the fallbacks get less time.
+    GROQ_TIMEOUT_SECONDS = int(os.getenv("GROQ_TIMEOUT_SECONDS", "45"))
+    GEMINI_TIMEOUT_SECONDS = int(os.getenv("GEMINI_TIMEOUT_SECONDS", "30"))
     # How many times a request is retried when the AI output fails validation.
     AI_MAX_ATTEMPTS = int(os.getenv("AI_MAX_ATTEMPTS", "3"))
 

@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -9,7 +10,19 @@ from .config import Config
 from .extensions import csrf, db, login_manager
 
 
+def configure_ai_log():
+    """Mesazhet e AI shfaqen në terminal me orë, që të gjendet shkaku i vonesave."""
+    logger = logging.getLogger("app.ai")
+    if logger.handlers:
+        return
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+
 def create_app(test_config=None):
+    configure_ai_log()
     load_dotenv()
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(Config)
@@ -23,18 +36,28 @@ def create_app(test_config=None):
     login_manager.init_app(app)
     csrf.init_app(app)
 
-    from . import models  # noqa: F401
+    from . import models, soft_delete  # noqa: F401
     from .error_pages import register_error_pages
     from .main import main_bp
 
     app.register_blueprint(main_bp)
     register_error_pages(app)
 
+    with app.app_context():
+        soft_delete.ensure_schema()
+
     @app.cli.command("init-db")
     def init_db_command():
         """Krijon tabelat e databazës PostgreSQL."""
         with app.app_context():
             db.create_all()
+            if not soft_delete.ensure_schema():
+                from click import ClickException
+
+                raise ClickException(
+                    "Databaza nuk u përditësua. Ekzekuto si pronar i tabelave: "
+                    + soft_delete.UPGRADE_SQL
+                )
         print("Databaza u inicializua me sukses.")
 
     @app.cli.command("ai-check")

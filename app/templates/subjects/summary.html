@@ -6,22 +6,17 @@
 <p class="sub">Përmbledhje e krijuar me AI. Krahasoje me materialin para se të mbështetesh tek ajo.</p>
 
 <article class="reading">
-  {# Formati i shërbimit AI: titulli, pastaj seksione "Emri:" me rreshta "- " #}
-  {% for block in material.summary.replace('\r\n', '\n').split('\n\n') if block.strip() %}
-    {% set lines = block.strip().split('\n') %}
-    {% set has_heading = lines[0].endswith(':') and lines|length > 1 %}
-    {% set body = lines[1:] if has_heading else lines %}
-    {% if has_heading %}<h3>{{ lines[0][:-1] }}</h3>{% endif %}
-    {% if loop.first and not has_heading and lines|length == 1 %}
-      <h2>{{ lines[0] }}</h2>
+  {% for kind, content in blocks %}
+    {% if kind == 'title' %}
+    <h2>{{ content }}</h2>
+    {% elif kind == 'heading' %}
+    <h3>{{ content }}</h3>
+    {% elif kind == 'list' %}
+    <ul>{% for item in content %}<li>{{ item }}</li>{% endfor %}</ul>
+    {% elif kind == 'code' %}
+    <pre tabindex="0"><code>{{ content }}</code></pre>
     {% else %}
-      {% set bullets = [] %}
-      {% for line in body if line.startswith('- ') %}{% set _ = bullets.append(line[2:]) %}{% endfor %}
-      {% if bullets|length == body|length %}
-        <ul>{% for item in bullets %}<li>{{ item }}</li>{% endfor %}</ul>
-      {% else %}
-        <p class="pre">{{ body|join('\n') }}</p>
-      {% endif %}
+    <p class="pre">{{ content }}</p>
     {% endif %}
   {% endfor %}
 </article>

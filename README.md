@@ -71,6 +71,14 @@ Pastaj krijo tabelat:
 flask --app run.py init-db
 ```
 
+Databazat e krijuara më herët përditësohen vetë kur nis aplikacioni (shtohet kolona `deleted_at`), nëse përdoruesi i aplikacionit i zotëron tabelat. Nëse tabelat i zotëron `postgres`, ekzekuto një herë:
+
+```cmd
+psql -U postgres -d piss_db -c "ALTER TABLE subjects ADD COLUMN IF NOT EXISTS deleted_at timestamptz; ALTER TABLE materials ADD COLUMN IF NOT EXISTS deleted_at timestamptz;"
+```
+
+Pas klikimit "Fshi", materiali ose lënda mund të kthehet me "Anulo" për 10 sekonda.
+
 ## Nisja
 
 ```cmd
@@ -88,7 +96,7 @@ Opsioni `--debug` është vetëm për zhvillim lokal.
 | Rendi | Shërbimi | Variablat në `.env` | Ku merret çelësi |
 |---|---|---|---|
 | 1 | Groq | `GROQ_API_KEY`, `GROQ_MODEL` | [console.groq.com](https://console.groq.com) |
-| 2 | Cerebras | `CEREBRAS_API_KEY`, `CEREBRAS_MODEL` | [cloud.cerebras.ai](https://cloud.cerebras.ai) |
+| 2 | Cerebras (provë e kufizuar) | `CEREBRAS_API_KEY`, `CEREBRAS_MODEL` | [cloud.cerebras.ai](https://cloud.cerebras.ai) |
 | 3 | Mistral | `MISTRAL_API_KEY`, `MISTRAL_MODEL` | [console.mistral.ai](https://console.mistral.ai) |
 | 4 | Gemini | `GEMINI_API_KEY`, `GEMINI_MODEL` | [aistudio.google.com](https://aistudio.google.com/apikey) |
 | 5 | Ollama (lokal) | `OLLAMA_BASE_URL`, `OLLAMA_MODEL` | Nuk kërkon çelës |
@@ -98,11 +106,35 @@ Mbështetet edhe OpenRouter (`openrouter`, me `OPENROUTER_API_KEY`) si opsion sh
 Si funksionon:
 
 - Shërbimet pa çelës API anashkalohen.
+- Kur Groq arrin limitin dhe në zinxhir ka Cerebras ose Mistral, kalohet menjëherë te ata. Përndryshe pritet pak, nëse limiti lirohet shpejt.
+- Një përmbledhje ose test zgjat më së shumti `AI_TOTAL_TIMEOUT_SECONDS` (90 sekonda); pastaj shfaqet gabim.
+- Ollama provohet vetëm kur është i nisur dhe modeli është shkarkuar.
 - Kur një shërbim arrin limitin, nuk përgjigjet ose kthen përgjigje të pavlefshme, provohet tjetri.
 - Përgjigjja validohet (formati JSON, gjuha dhe mbështetja te materiali). Nëse nuk kalon, kërkesa përsëritet deri në `AI_MAX_ATTEMPTS` herë.
 - Nëse asnjë përpjekje nuk ka sukses, aplikacioni shfaq gabim dhe nuk ruan asgjë.
 
 Kur përdor shërbimet cloud, teksti i materialit dërgohet te ofruesi përkatës. Për përpunim vetëm lokal vendos `AI_PROVIDER=ollama`.
+
+### Çelësi i Cerebras
+
+Sipas [dokumentacionit zyrtar](https://inference-docs.cerebras.ai/support/rate-limits) (nëntor 2026), Cerebras **nuk ka nivel falas të përhershëm**. Llogaritë e reja marrin një provë me kredit prej 5 $ që skadon pas 30 ditësh, dhe për ta aktivizuar [kërkohet një metodë pagese](https://inference-docs.cerebras.ai/console/account-billing). Sipas tyre, pagesë bëhet vetëm nëse blen kredit shtesë; kushtet mund të ndryshojnë, prandaj kontrolloji para regjistrimit.
+
+1. Hap [cloud.cerebras.ai](https://cloud.cerebras.ai) dhe krijo llogari (ose hyr).
+2. Shto metodën e pagesës. Pa të, qasja në API mbetet joaktive.
+3. Në menynë e majtë zgjidh **API Keys**, pastaj **Generate API Key** dhe jepi një emër.
+4. Kopjo çelësin te `.env`:
+
+```env
+CEREBRAS_API_KEY=çelësi-yt
+CEREBRAS_MODEL=gpt-oss-120b
+AI_PROVIDER=groq,cerebras,gemini,ollama
+```
+
+5. Rinise aplikacionin dhe kontrollo me `flask --app run.py ai-check`.
+
+Prova ka limit prej 5 kërkesash në minutë për `gpt-oss-120b`. Pa çelës, Cerebras thjesht anashkalohet.
+
+### Ollama
 
 Për Ollama shkarko modelin:
 
@@ -137,6 +169,9 @@ app/
   extensions.py       SQLAlchemy, Login Manager, CSRF
   models.py           Modelet e databazës
   main.py             Route-t e aplikacionit
+  overview.py         Llogaritjet e panelit dhe ora e Kosovës
+  soft_delete.py      Fshirja me mundësi anulimi
+  summary_format.py   Formatimi i përmbledhjes dhe blloqet e kodit
   error_pages.py      Faqet e gabimeve
   templates/          UI HTML në shqip
   static/             CSS dhe JavaScript

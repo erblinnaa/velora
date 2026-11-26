@@ -13,6 +13,11 @@ class AIProviderAuthenticationError(AIProviderError):
 class AIProviderRateLimitError(AIProviderError):
     """The provider quota or rate limit was exceeded."""
 
+    def __init__(self, message, retry_after: float | None = None):
+        super().__init__(message)
+        # Seconds the provider asks us to wait, when it says so.
+        self.retry_after = retry_after
+
 
 class AIProviderModelUnavailable(AIProviderError):
     """The configured model is unavailable for the provider."""
@@ -28,6 +33,10 @@ class AIProviderUnavailable(AIProviderError):
 
 class AIProviderTimeout(AIProviderError):
     """Raised when the provider takes longer than the configured timeout."""
+
+
+class AIDeadlineExceeded(AIProviderTimeout):
+    """The time budget of the whole request is used up."""
 
 
 class AIProviderResponseError(AIProviderError):

@@ -13,6 +13,7 @@ from .document import (
     normalize_text,
 )
 from .errors import AIOutputValidationError, AIProviderResponseError
+from ..summary_format import format_example, one_line
 from ..prompts import (
     QUIZ_SYSTEM_PROMPT,
     SUMMARY_SYSTEM_PROMPT,
@@ -281,32 +282,24 @@ class AIService:
 
     @staticmethod
     def _format_summary(summary: dict) -> str:
+        def points(items):
+            return "\n".join(f"- {one_line(item)}" for item in items)
+
         sections = [summary["title"]]
         if summary.get("introduction"):
             sections.append(f"Hyrje:\n{summary['introduction']}")
-        sections.append(
-            "Pikat kryesore:\n"
-            + "\n".join(f"- {item}" for item in summary["key_points"])
-        )
-        sections.append(
-            "Konceptet për t'u mbajtur mend:\n"
-            + "\n".join(f"- {item}" for item in summary["concepts"])
-        )
+        sections.append("Pikat kryesore:\n" + points(summary["key_points"]))
+        sections.append("Konceptet për t'u mbajtur mend:\n" + points(summary["concepts"]))
         if summary.get("examples"):
-            sections.append(
-                "Shembuj praktikë:\n"
-                + "\n".join(f"- {item}" for item in summary["examples"])
-            )
+            lines = [line for item in summary["examples"] for line in format_example(item)]
+            sections.append("Shembuj praktikë:\n" + "\n".join(lines))
         if summary.get("exam_points"):
-            sections.append(
-                "Për përgatitjen e provimit:\n"
-                + "\n".join(f"- {item}" for item in summary["exam_points"])
-            )
+            sections.append("Për përgatitjen e provimit:\n" + points(summary["exam_points"]))
         if summary.get("conclusion"):
             sections.append(f"Përfundim:\n{summary['conclusion']}")
         sections.append(
             "Prova nga materiali:\n"
-            + "\n".join(f'- "{item}"' for item in summary["source_excerpts"])
+            + "\n".join(f'- "{one_line(item)}"' for item in summary["source_excerpts"])
         )
         return "\n\n".join(sections)
 

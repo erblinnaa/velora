@@ -7,6 +7,10 @@ class AIProvider(ABC):
 
     name = "unknown"
 
+    def ready(self) -> bool:
+        """A quick check made before this provider is tried in a chain."""
+        return True
+
     @property
     @abstractmethod
     def model(self) -> str:

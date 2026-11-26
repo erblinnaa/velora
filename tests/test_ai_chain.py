@@ -1,13 +1,16 @@
 import io
 import json
+import time
 from urllib.error import HTTPError, URLError
 
 import pytest
 
-from app import create_app
-from app.ai import factory
+from app import ai_service, create_app
+from app.ai import factory, fallback_provider
+from app.ai.deadline import Deadline
 from app.ai.document import has_foreign_script
 from app.ai.errors import (
+    AIDeadlineExceeded,
     AIOutputValidationError,
     AIProviderAuthenticationError,
     AIProviderConfigurationError,
@@ -16,8 +19,10 @@ from app.ai.errors import (
     AIProviderResponseError,
 )
 from app.ai.fallback_provider import FallbackProvider
+from app.ai.ollama_provider import OllamaProvider
 from app.ai.openai_compatible_provider import OpenAICompatibleProvider
 from app.ai.service import AIService
+from app.prompts import SUMMARY_FORMAT, summary_prompt, summary_synthesis_prompt
 
 
 MATERIAL = (
@@ -243,3 +248,129 @@ def test_service_gives_up_after_max_attempts():
     with pytest.raises(AIOutputValidationError):
         AIService(provider, max_attempts=2).summarize_material(MATERIAL)
     assert provider.calls == 2
+
+
+# ------------------------------------------------------------- Time limits
+class SlowProvider(ScriptedProvider):
+    def __init__(self, name, seconds, timeout=None):
+        super().__init__(name, [])
+        self.seconds = seconds
+        self.timeout = timeout
+
+    def generate_json(self, system_prompt, user_prompt):
+        self.calls += 1
+        time.sleep(self.seconds)
+        return {"slow": True}
+
+
+def test_slow_provider_is_cut_off_and_the_next_one_answers():
+    slow = SlowProvider("gemini", 2, timeout=0.1)
+    fast = ScriptedProvider("ollama", [{"ok": True}])
+    started = time.monotonic()
+    assert FallbackProvider([slow, fast], Deadline(5)).generate_json("s", "u") == {"ok": True}
+    assert time.monotonic() - started < 1
+
+
+def test_whole_request_stops_at_the_deadline_with_albanian_message():
+    first = SlowProvider("groq", 2)
+    second = ScriptedProvider("gemini", [{"ok": True}])
+    started = time.monotonic()
+    with pytest.raises(AIDeadlineExceeded, match="brenda 0.2 sekondave"):
+        FallbackProvider([first, second], Deadline(0.2)).generate_json("s", "u")
+    assert time.monotonic() - started < 1
+    assert second.calls == 0
+
+
+def test_short_rate_limit_is_waited_out_before_falling_back(monkeypatch):
+    waited = []
+    monkeypatch.setattr(fallback_provider.time, "sleep", waited.append)
+    groq = ScriptedProvider("groq", [AIProviderRateLimitError("limit", retry_after=12), {"ok": True}])
+    other = ScriptedProvider("gemini", [])
+    assert FallbackProvider([groq, other], Deadline(90)).generate_json("s", "u") == {"ok": True}
+    assert waited == [13] and other.calls == 0
+
+
+@pytest.mark.parametrize("retry_after, budget", [(None, 90), (120, 90), (30, 20)])
+def test_long_or_unknown_rate_limit_falls_back_at_once(monkeypatch, retry_after, budget):
+    waited = []
+    monkeypatch.setattr(fallback_provider.time, "sleep", waited.append)
+    groq = ScriptedProvider("groq", [AIProviderRateLimitError("limit", retry_after=retry_after)])
+    other = ScriptedProvider("gemini", [{"ok": True}])
+    assert FallbackProvider([groq, other], Deadline(budget)).generate_json("s", "u") == {"ok": True}
+    assert waited == []
+
+
+def test_rate_limit_error_carries_retry_after_and_logs_reason_without_ids(caplog):
+    body = io.BytesIO(json.dumps({"error": {"message": "Limit 8000 for org_abc123"}}).encode())
+    error = HTTPError("https://example.test", 429, "error", {"retry-after": "7"}, body)
+    with pytest.raises(AIProviderRateLimitError) as raised:
+        make_provider(RecordingOpener(error)).generate_json("s", "u")
+    assert raised.value.retry_after == 7
+    assert "Limit 8000" in caplog.text and "org_abc123" not in caplog.text
+
+
+@pytest.mark.parametrize("installed, ready", [(["gemma3:4b"], True), (["llama3:latest"], False)])
+def test_ollama_is_tried_only_when_its_model_is_pulled(monkeypatch, installed, ready):
+    provider = OllamaProvider("http://127.0.0.1:11434", "gemma3:4b")
+    monkeypatch.setattr(provider, "_request", lambda *a, **k: {"models": [{"name": n} for n in installed]})
+    assert provider.ready() is ready
+
+
+def test_chain_skips_a_provider_that_is_not_ready():
+    missing = ScriptedProvider("ollama", [])
+    missing.ready = lambda: False
+    groq = ScriptedProvider("groq", [AIProviderRateLimitError("limit")])
+    with pytest.raises(AIProviderRateLimitError):
+        FallbackProvider([groq, missing]).generate_json("s", "u")
+    assert missing.calls == 0
+
+
+def test_public_service_applies_the_total_limit_to_a_single_provider(monkeypatch):
+    slow = SlowProvider("groq", 2)
+    monkeypatch.setattr(ai_service, "create_provider", lambda: slow)
+    application = _app(AI_PROVIDER="groq", AI_TOTAL_TIMEOUT_SECONDS=0.2)
+    with application.app_context(), pytest.raises(ai_service.AIServiceError, match="brenda 0.2 sekondave"):
+        ai_service.summarize_material(MATERIAL)
+
+
+def test_fallbacks_have_short_timeouts():
+    application = _app(AI_PROVIDER="groq,gemini", GROQ_API_KEY="g", GEMINI_API_KEY="m", AI_TIMEOUT_SECONDS=120)
+    with application.app_context():
+        groq, gemini = factory.create_provider().providers
+    assert (groq.timeout, gemini.timeout) == (45, 30)
+
+
+@pytest.mark.parametrize("build", [summary_prompt, summary_synthesis_prompt])
+def test_both_summary_prompts_state_the_format_and_its_limits(build):
+    prompt = build("tekst prove")
+    assert SUMMARY_FORMAT in prompt and "3 deri 6 pika" in prompt
+    assert "{{" not in prompt and "tekst prove" in prompt
+
+
+@pytest.mark.parametrize("fallback", ["cerebras", "mistral"])
+def test_rate_limit_switches_to_a_quick_service_without_waiting(monkeypatch, fallback):
+    waited = []
+    monkeypatch.setattr(fallback_provider.time, "sleep", waited.append)
+    groq = ScriptedProvider("groq", [AIProviderRateLimitError("limit", retry_after=5)])
+    quick = ScriptedProvider(fallback, [{"ok": True}])
+    assert FallbackProvider([groq, quick], Deadline(90)).generate_json("s", "u") == {"ok": True}
+    assert waited == []
+
+
+def test_groq_is_waited_for_when_cerebras_fails_too(monkeypatch):
+    waited = []
+    monkeypatch.setattr(fallback_provider.time, "sleep", waited.append)
+    groq = ScriptedProvider("groq", [AIProviderRateLimitError("limit", retry_after=5), {"ok": True}])
+    cerebras = ScriptedProvider("cerebras", [AIProviderNetworkError("offline")])
+    gemini = ScriptedProvider("gemini", [])
+    chain = FallbackProvider([groq, cerebras, gemini], Deadline(90))
+    assert chain.generate_json("s", "u") == {"ok": True}
+    assert waited == [6] and gemini.calls == 0
+
+
+def test_factory_puts_cerebras_second_only_when_it_has_a_key():
+    for key, expected in (("c-key", ["groq", "cerebras", "ollama"]), ("", ["groq", "ollama"])):
+        application = _app(AI_PROVIDER="groq,cerebras,ollama", GROQ_API_KEY="g", CEREBRAS_API_KEY=key)
+        with application.app_context():
+            assert [p.name for p in factory.create_provider().providers] == expected
+
