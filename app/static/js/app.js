@@ -11,9 +11,6 @@
     themeButtons.forEach((button) => {
       button.setAttribute('aria-pressed', String(button.dataset.setTheme === theme));
     });
-    document.querySelectorAll('[data-theme-field]').forEach((field) => {
-      field.value = theme;
-    });
     document.querySelectorAll('input[type="radio"][name="theme"]').forEach((radio) => {
       radio.checked = radio.value === theme;
     });
@@ -60,6 +57,14 @@
     setMenu(false);
     menuButton.focus();
   });
+
+  /* Lidhjet si #shto-material hapin seksionin përkatës */
+  function openTarget() {
+    const target = document.getElementById(window.location.hash.slice(1));
+    if (target?.tagName === 'DETAILS') target.open = true;
+  }
+  window.addEventListener('hashchange', openTarget);
+  openTarget();
 
   /* Mesazhet dhe butoni "Kthehu mbrapa" */
   document.querySelectorAll('[data-dismiss]').forEach((button) => {
@@ -115,16 +120,20 @@
 
       const button = form.querySelector('button[type="submit"]');
       if (!button) return;
-      if (button.dataset.loading) startLoading(button);
+      // Format me AI e tregojnë pritjen poshtë butonit.
+      if (button.dataset.loading && !form.hasAttribute('data-ai')) startLoading(button);
       lock(button);
 
       // Vetëm një kërkesë AI në të njëjtën kohë.
       if (form.hasAttribute('data-ai')) {
         document.querySelectorAll('form[data-ai] button[type="submit"]').forEach(lock);
         const status = document.createElement('p');
-        status.className = 'ai-status hint';
+        status.className = 'ai-status';
         status.setAttribute('role', 'status');
-        status.textContent = 'Mund të zgjasë disa minuta. Mos e mbyll faqen.';
+        const spinner = document.createElement('span');
+        spinner.className = 'spinner';
+        spinner.setAttribute('aria-hidden', 'true');
+        status.append(spinner, 'Velora po e përgatit… Mund të zgjasë pak, mos e mbyll faqen.');
         form.parentElement.append(status);
       }
     });

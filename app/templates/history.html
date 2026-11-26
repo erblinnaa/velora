@@ -2,35 +2,30 @@
 {% import "_macros.html" as ui %}
 {% block title %}Historiku{% endblock %}
 {% block content %}
-<div class="page">
-  <header class="page-header">
-    <div>
-      <h1>Historiku i rezultateve</h1>
-      <p class="muted">Çdo test i përfunduar ruhet këtu, nga më i riu. Hap rezultatin për të parë përgjigjet.</p>
-    </div>
-  </header>
+<h1>Historiku i rezultateve</h1>
+<p class="sub">Çdo test i përfunduar ruhet këtu, nga më i riu. Hap rezultatin për të parë përgjigjet.</p>
 
-  {% if attempts %}
-  <table class="history">
-    <thead>
-      <tr><th scope="col">Testi</th><th scope="col">Lënda</th><th scope="col">Rezultati</th><th scope="col">Data</th></tr>
-    </thead>
-    <tbody>
-      {% for attempt in attempts %}
-      <tr>
-        <td class="history-test"><a href="{{ url_for('main.quiz_detail', quiz_id=attempt.quiz_id) }}">{{ attempt.quiz.title }}</a></td>
-        <td data-label="Lënda"><a href="{{ url_for('main.subject_detail', subject_id=attempt.quiz.subject_id) }}">{{ attempt.quiz.subject.name }}</a></td>
-        <td data-label="Rezultati" class="numeric"><a href="{{ url_for('main.attempt_detail', attempt_id=attempt.id) }}" aria-label="Shiko përgjigjet: {{ attempt.score }} nga {{ attempt.total_questions }}">{{ attempt.score }}/{{ attempt.total_questions }} ({{ ui.percent(attempt) }})</a></td>
-        <td data-label="Data" class="numeric">{{ attempt.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <div class="empty">
-    <p>Ende nuk ke përfunduar asnjë test. Hap një lëndë, krijo testin dhe rezultati do të shfaqet këtu.</p>
-    <a class="button" href="{{ url_for('main.dashboard') }}">Shko te lëndët</a>
-  </div>
-  {% endif %}
+<div class="h2"><h2>Rezultatet</h2></div>
+{% if attempts %}
+<table class="history">
+  <thead>
+    <tr><th scope="col">Testi</th><th scope="col">Lënda</th><th scope="col" class="col-score">Rezultati</th><th scope="col" class="col-date">Data</th></tr>
+  </thead>
+  <tbody>
+    {% for attempt in attempts %}
+    <tr>
+      <td><a class="nm" href="{{ url_for('main.quiz_detail', quiz_id=attempt.quiz_id) }}">{{ attempt.quiz.title }}</a></td>
+      <td data-label="Lënda"><a class="nm" href="{{ url_for('main.subject_detail', subject_id=attempt.quiz.subject_id) }}">{{ ui.square(attempt.quiz.subject.color) }}{{ attempt.quiz.subject.name }}</a></td>
+      <td data-label="Rezultati" class="numeric"><a class="nm" href="{{ url_for('main.attempt_detail', attempt_id=attempt.id) }}" aria-label="Shiko përgjigjet: {{ attempt.score }} nga {{ attempt.total_questions }}">{{ attempt.score }}/{{ attempt.total_questions }} {{ ui.score_tag(attempt) }}</a></td>
+      <td data-label="Data" class="numeric">{{ attempt.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="blank">
+  <p>Ende nuk ke përfunduar asnjë test. Hap një lëndë, krijo testin dhe rezultati do të shfaqet këtu.</p>
+  <a class="button" href="{{ url_for('main.dashboard') }}">Shko te lëndët</a>
 </div>
+{% endif %}
 {% endblock %}

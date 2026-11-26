@@ -3,54 +3,48 @@
 {% block title %}Rezultati{% endblock %}
 {% block content %}
 {% set ratio = attempt.score / attempt.total_questions if attempt.total_questions else 0 %}
-<div class="page narrow-page">
-  <header class="page-header">
-    <div>
-      <h1>Rezultati yt</h1>
-      <p class="muted">{{ attempt.quiz.title }}</p>
-    </div>
-  </header>
+<p class="back"><a href="{{ url_for('main.history') }}">Shiko historikun</a></p>
+<h1>Rezultati yt</h1>
+<p class="sub">
+  {% if ratio == 1 %}Të gjitha përgjigjet janë të sakta.
+  {% elif ratio >= 0.7 %}Rezultat i mirë. Rishiko pjesët ku pate dyshim.
+  {% else %}Lexo edhe një herë materialin dhe provo përsëri.{% endif %}
+</p>
 
-  <section class="panel result">
-    <p class="result-score">{{ ui.percent(attempt) }}</p>
-    <p><strong>{{ attempt.score }} nga {{ attempt.total_questions }} përgjigje të sakta</strong></p>
-    <p class="muted">
-      {% if ratio == 1 %}Të gjitha përgjigjet janë të sakta.
-      {% elif ratio >= 0.7 %}Rezultat i mirë. Rishiko pjesët ku pate dyshim.
-      {% else %}Lexo edhe një herë materialin dhe provo përsëri.{% endif %}
-    </p>
-  </section>
+<dl class="props">
+  <dt>Testi</dt><dd>{{ attempt.quiz.title }}</dd>
+  <dt>Rezultati</dt><dd>{{ ui.score_tag(attempt) }}</dd>
+  <dt>Përgjigje të sakta</dt><dd>{{ attempt.score }} nga {{ attempt.total_questions }}</dd>
+  <dt>Data</dt><dd>{{ attempt.created_at.strftime('%d.%m.%Y %H:%M') }}</dd>
+</dl>
 
-  <div class="actions below">
-    <a class="button" href="{{ url_for('main.quiz_detail', quiz_id=attempt.quiz_id) }}">Provo përsëri</a>
-    <a class="button button-secondary" href="{{ url_for('main.subject_detail', subject_id=attempt.quiz.subject_id) }}">Kthehu te lënda</a>
-    <a href="{{ url_for('main.history') }}">Shiko historikun</a>
-  </div>
-
-  <section class="review" aria-labelledby="review-title">
-    <div class="section-head"><h2 id="review-title">Përgjigjet e tua</h2></div>
-    <ol class="review-list">
-      {% for item in review %}
-      <li class="panel review-item {{ 'is-correct' if item.is_correct else 'is-wrong' }}">
-        <p class="review-status">{{ 'Saktë' if item.is_correct else ('Gabim' if item.chosen is not none else 'Pa përgjigje') }}</p>
-        <h3>{{ loop.index }}. {{ item.question }}</h3>
-        <dl>
-          <dt>Përgjigjja jote</dt>
-          <dd class="review-chosen">{{ item.chosen if item.chosen is not none else 'Nuk u përgjigj' }}</dd>
-          <dt>Përgjigjja e saktë</dt>
-          <dd>{{ item.correct if item.correct is not none else 'Nuk është ruajtur' }}</dd>
-          {% if item.explanation %}
-          <dt>Shpjegimi</dt>
-          <dd>{{ item.explanation }}</dd>
-          {% endif %}
-          {% if item.source_excerpt %}
-          <dt>Fragmenti nga materiali</dt>
-          <dd><blockquote>{{ item.source_excerpt }}</blockquote></dd>
-          {% endif %}
-        </dl>
-      </li>
-      {% endfor %}
-    </ol>
-  </section>
+<div class="actions below">
+  <a class="button" href="{{ url_for('main.quiz_detail', quiz_id=attempt.quiz_id) }}">Provo përsëri</a>
+  <a class="button-plain" href="{{ url_for('main.subject_detail', subject_id=attempt.quiz.subject_id) }}">Kthehu te lënda</a>
 </div>
+
+<section aria-labelledby="review-title">
+  <div class="h2"><h2 id="review-title">Përgjigjet e tua</h2></div>
+  <ol class="review-list">
+    {% for item in review %}
+    <li class="review-item {{ 'is-correct' if item.is_correct else 'is-wrong' }}">
+      <span class="tag {{ 'tag-ok' if item.is_correct else 'tag-bad' }}">{{ 'Saktë' if item.is_correct else ('Gabim' if item.chosen is not none else 'Pa përgjigje') }}</span>
+      <h3>{{ loop.index }}. {{ item.question }}</h3>
+      <dl>
+        <dt>Përgjigjja jote</dt>
+        <dd>{{ item.chosen if item.chosen is not none else 'Nuk u përgjigj' }}</dd>
+        <dt>Përgjigjja e saktë</dt>
+        <dd>{{ item.correct if item.correct is not none else 'Nuk është ruajtur' }}</dd>
+        {% if item.explanation %}
+        <dt>Shpjegimi</dt>
+        <dd>{{ item.explanation }}</dd>
+        {% endif %}
+      </dl>
+      {% if item.source_excerpt %}
+      <blockquote class="source"><cite>Fragmenti nga materiali</cite>{{ item.source_excerpt }}</blockquote>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</section>
 {% endblock %}

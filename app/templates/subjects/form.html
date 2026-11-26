@@ -4,43 +4,39 @@
 {% block content %}
 {% set back = url_for('main.subject_detail', subject_id=subject.id) if subject else url_for('main.dashboard') %}
 {% set posted = request.method == 'POST' %}
-{% set colors = [('#1f4d3a', 'E gjelbër'), ('#2f4a6d', 'Blu'), ('#1f5c63', 'Bojëqielli e errët'), ('#8a5a2b', 'Kafe'), ('#8f3b2f', 'Tullë'), ('#6b6a1f', 'Ulliri'), ('#4f5753', 'Gri')] %}
-{% set selected = (request.form.get('color') if posted else (subject.color if subject else '#1f4d3a'))|default('#1f4d3a', true)|lower %}
-{% if selected == '#6c63ff' %}{% set selected = '#1f4d3a' %}{% endif %}
+{% set colors = [('#337ea9', 'Blu'), ('#9065b0', 'Vjollcë'), ('#c14c8a', 'Rozë'), ('#d44c47', 'E kuqe'), ('#d9730d', 'Portokalli'), ('#448361', 'E gjelbër'), ('#787774', 'Gri')] %}
+{% set selected = (request.form.get('color') if posted else (subject.color if subject else '#337ea9'))|default('#337ea9', true)|lower %}
+{% if selected == '#6c63ff' %}{% set selected = '#337ea9' %}{% endif %}
 {% if selected not in colors|map('first')|list %}{% set colors = colors + [(selected, 'Ngjyra aktuale')] %}{% endif %}
-<div class="page narrow-page">
-  <p class="back"><a href="{{ back }}">{{ 'Kthehu te lënda' if subject else 'Kthehu te paneli' }}</a></p>
-  <header class="page-header">
-    <h1>{{ 'Ndrysho lëndën' if subject else 'Krijo një lëndë' }}</h1>
-  </header>
+<p class="back"><a href="{{ back }}">{{ 'Kthehu te lënda' if subject else 'Kthehu te paneli' }}</a></p>
+<h1>{{ 'Ndrysho lëndën' if subject else 'Krijo një lëndë' }}</h1>
 
-  <form method="post" class="panel form-stack">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="field">
-      <label for="name">Emri i lëndës</label>
-      <input id="name" type="text" name="name" value="{{ request.form.get('name', '') if posted else (subject.name if subject else '') }}" placeholder="p.sh. Inteligjencë Artificiale" maxlength="120" required {{ ui.invalid(errors, 'name') }}>
-      {{ ui.field_error(errors, 'name') }}
+<form method="post" class="form-stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="field">
+    <label for="name">Emri i lëndës</label>
+    <input id="name" type="text" name="name" value="{{ request.form.get('name', '') if posted else (subject.name if subject else '') }}" placeholder="p.sh. Inteligjencë Artificiale" maxlength="120" required {{ ui.invalid(errors, 'name') }}>
+    {{ ui.field_error(errors, 'name') }}
+  </div>
+  <div class="field">
+    <label for="description">Përshkrimi <span class="hint">opsional</span></label>
+    <textarea id="description" name="description" rows="4" placeholder="Çfarë mëson në këtë lëndë?">{{ request.form.get('description', '') if posted else ((subject.description or '') if subject else '') }}</textarea>
+  </div>
+  <fieldset class="field">
+    <legend>Ngjyra e lëndës</legend>
+    <div class="swatches">
+      {% for value, label in colors %}
+      <label class="swatch" title="{{ label }}">
+        <input type="radio" name="color" value="{{ value }}" {% if value == selected %}checked{% endif %}>
+        <span style="--swatch: {{ value }}"></span>
+        <span class="visually-hidden">{{ label }}</span>
+      </label>
+      {% endfor %}
     </div>
-    <div class="field">
-      <label for="description">Përshkrimi <span class="hint">opsional</span></label>
-      <textarea id="description" name="description" rows="4" placeholder="Çfarë mëson në këtë lëndë?">{{ request.form.get('description', '') if posted else ((subject.description or '') if subject else '') }}</textarea>
-    </div>
-    <fieldset class="field">
-      <legend>Ngjyra e lëndës</legend>
-      <div class="swatches">
-        {% for value, label in colors %}
-        <label class="swatch" title="{{ label }}">
-          <input type="radio" name="color" value="{{ value }}" {% if value == selected %}checked{% endif %}>
-          <span style="--swatch: {{ value }}"></span>
-          <span class="visually-hidden">{{ label }}</span>
-        </label>
-        {% endfor %}
-      </div>
-    </fieldset>
-    <div class="actions">
-      <button class="button" type="submit" data-loading="Po ruhet…">{{ 'Ruaj ndryshimet' if subject else 'Krijo lëndën' }}</button>
-      <a class="button button-secondary" href="{{ back }}">Anulo</a>
-    </div>
-  </form>
-</div>
+  </fieldset>
+  <div class="actions">
+    <button class="button" type="submit" data-loading="Po ruhet…">{{ 'Ruaj ndryshimet' if subject else 'Krijo lëndën' }}</button>
+    <a class="button-plain" href="{{ back }}">Anulo</a>
+  </div>
+</form>
 {% endblock %}

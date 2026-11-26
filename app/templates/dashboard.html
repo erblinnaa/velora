@@ -2,11 +2,9 @@
 {% import "_macros.html" as ui %}
 {% block title %}Paneli{% endblock %}
 {% block head_extra %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
   <script src="{{ url_for('static', filename='js/owl-eyes.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
 {% endblock %}
-{% block body_class %}page-dash{% endblock %}
 {% block content %}
 {% set first_name = current_user.full_name.split()[0] %}
 <div class="dash">
@@ -24,12 +22,12 @@
   <section aria-labelledby="subjects-title">
     <div class="h2">
       <h2 id="subjects-title">Lëndët</h2>
-      {% if subjects %}<a class="btn" href="{{ url_for('main.create_subject') }}">Lëndë e re</a>{% endif %}
+      {% if subjects %}<a class="button" href="{{ url_for('main.create_subject') }}">Lëndë e re</a>{% endif %}
     </div>
     {% if subjects %}
     <table>
       <thead>
-        <tr><th scope="col">Emri</th><th scope="col" class="col-materials">Materiale</th><th scope="col" class="col-quizzes">Teste</th><th scope="col" class="col-last hide">Testi i fundit</th></tr>
+        <tr><th scope="col">Emri</th><th scope="col" class="col-materials">Materiale</th><th scope="col" class="col-narrow">Teste</th><th scope="col" class="col-last hide">Testi i fundit</th></tr>
       </thead>
       <tbody>
         {% for subject in subjects %}
@@ -40,9 +38,9 @@
             {% if subject.description %}<span class="ds">{{ subject.description }}</span>{% endif %}
           </td>
           <td>{{ subject.materials|length }}</td>
-          <td>{% if subject.quizzes %}{{ subject.quizzes|length }}{% else %}<span class="tag t0">0</span>{% endif %}</td>
+          <td>{% if subject.quizzes %}{{ subject.quizzes|length }}{% else %}<span class="tag tag-warn">0</span>{% endif %}</td>
           {% if last %}
-          <td class="hide"><span class="tag t1">{{ ui.percent(last) }}</span> {{ last.created_at.strftime('%d.%m.%Y') }}</td>
+          <td class="hide">{{ ui.score_tag(last) }} {{ last.created_at.strftime('%d.%m.%Y') }}</td>
           {% else %}
           <td class="hide none">Asnjë ende</td>
           {% endif %}
@@ -54,7 +52,7 @@
     {% else %}
     <div class="blank">
       <p>Ende nuk ke asnjë lëndë.</p>
-      <a class="btn" href="{{ url_for('main.create_subject') }}">Lëndë e re</a>
+      <a class="button" href="{{ url_for('main.create_subject') }}">Lëndë e re</a>
     </div>
     {% endif %}
   </section>
@@ -67,7 +65,7 @@
     {% for attempt in attempts %}
     <a class="res" href="{{ url_for('main.attempt_detail', attempt_id=attempt.id) }}">
       <span>{{ attempt.quiz.title }}<small>{{ attempt.quiz.subject.name }} · {{ attempt.created_at.strftime('%d.%m.%Y') }}</small></span>
-      <span class="res-score">{{ attempt.score }}/{{ attempt.total_questions }} <span class="tag t1">{{ ui.percent(attempt) }}</span></span>
+      <span class="res-score">{{ attempt.score }}/{{ attempt.total_questions }} {{ ui.score_tag(attempt) }}</span>
     </a>
     {% else %}
     <p class="blank">Ende nuk ke zgjidhur asnjë test.</p>

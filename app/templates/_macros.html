@@ -10,7 +10,7 @@
 {% endmacro %}
 
 {% macro brand(href) %}
-<a href="{{ href }}" class="brand"><span class="brand-mark" aria-hidden="true">V</span>Velora</a>
+<a class="ws" href="{{ href }}"><svg width="20" height="20" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="16" r="13" style="fill:var(--n-body)"/><circle cx="10.5" cy="14" r="4.5" style="fill:var(--n-eye)"/><circle cx="19.5" cy="14" r="4.5" style="fill:var(--n-eye)"/><circle cx="10.5" cy="14.5" r="2" fill="#191919"/><circle cx="19.5" cy="14.5" r="2" fill="#191919"/><path d="M15 17 L13.5 19.5 L16.5 19.5Z" style="fill:var(--n-beak)"/></svg>Velora</a>
 {% endmacro %}
 
 {% macro theme_switch() %}
@@ -28,12 +28,10 @@
 {# Atributet që lidhin një fushë me mesazhin e gabimit #}
 {% macro invalid(errors, name) %}{% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}{% endmacro %}
 
-{% macro percent(attempt) %}{{ (attempt.score / attempt.total_questions * 100)|round|int if attempt.total_questions else 0 }}%{% endmacro %}
+{# Etiketa e rezultatit: e gjelbër nga 70%, e verdhë 50–69%, e kuqe nën 50% #}
+{% macro score_tag(attempt) %}{% set value = (attempt.score / attempt.total_questions * 100)|round|int if attempt.total_questions else 0 %}<span class="tag {{ 'tag-ok' if value >= 70 else ('tag-warn' if value >= 50 else 'tag-bad') }}">{{ value }}%</span>{% endmacro %}
 
 {% macro count(number, one, many) %}{{ number }} {{ one if number == 1 else many }}{% endmacro %}
 
 {# Katrori me ngjyrën e lëndës; ngjyra e vjetër e parazgjedhur merr theksin #}
 {% macro square(color) %}<span class="sq" {% if color|lower != '#6c63ff' %}style="--sq: {{ color }}"{% endif %} aria-hidden="true"></span>{% endmacro %}
-
-{# Ngjyra e vjetër e parazgjedhur shfaqet me të gjelbrën e re #}
-{% macro spine(color) %}<span class="spine" {% if color|lower != '#6c63ff' %}style="--spine: {{ color }}"{% endif %} aria-hidden="true"></span>{% endmacro %}

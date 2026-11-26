@@ -1,66 +1,42 @@
+{# Korniza e faqeve për përdoruesit e kyçur #}
 {% import "_macros.html" as ui %}
-{% set signed_in = current_user.is_authenticated %}
 <!doctype html>
-<html lang="sq" data-theme="{{ current_user.theme if signed_in and current_user.theme in ['dark', 'light'] else 'light' }}">
+<html lang="sq" data-theme="{{ current_user.theme if current_user.theme in ['dark', 'light'] else 'light' }}">
 <head>
   {% set page_title %}{% block title %}Studim{% endblock %}{% endset %}
   {{ ui.head(page_title) }}
-  {% if signed_in %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shell.css') }}">
-  {% endif %}
   {% block head_extra %}{% endblock %}
   <script>
-    // Para shfaqjes së faqes: llogaria vendos temën, përndryshe shfletuesi.
+    // Para shfaqjes së faqes: llogaria vendos temën dhe shfletuesi e mban mend.
     (function () {
       var root = document.documentElement;
       root.classList.add('js');
-      try {
-        {% if signed_in %}
-        localStorage.setItem('velora-theme', root.dataset.theme);
-        {% else %}
-        var saved = localStorage.getItem('velora-theme');
-        if (saved === 'light' || saved === 'dark') root.dataset.theme = saved;
-        {% endif %}
-      } catch (e) {}
+      try { localStorage.setItem('velora-theme', root.dataset.theme); } catch (e) {}
     })();
   </script>
   <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 </head>
-<body class="{% block body_class %}{% endblock %}" {% if signed_in %}data-theme-url="{{ url_for('main.settings') }}" data-csrf="{{ csrf_token() }}"{% endif %}>
-  {% set flashes %}
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <div class="flash-stack">
-          {% for category, message in messages %}
-            <div class="flash flash-{{ category }}" role="{{ 'alert' if category == 'danger' else 'status' }}">
-              <p>{{ message }}</p>
-              <button type="button" class="flash-close" data-dismiss>Mbyll</button>
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
-  {% endset %}
-
+<body data-theme-url="{{ url_for('main.settings') }}" data-csrf="{{ csrf_token() }}">
   <a class="skip-link" href="#main">Kalo te përmbajtja</a>
 
-  {% if signed_in %}
   <div class="app-shell">
     {% include "partials/_sidebar.html" %}
     <main class="main-content" id="main">
-      {{ flashes }}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-stack">
+          {% for category, message in messages %}
+          <div class="flash flash-{{ category }}" role="{{ 'alert' if category == 'danger' else 'status' }}">
+            <p>{{ message }}</p>
+            <button type="button" class="flash-close" data-dismiss>Mbyll</button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endwith %}
       {% block content %}{% endblock %}
     </main>
   </div>
-  {% else %}
-  <header class="public-bar">
-    {{ ui.brand(url_for('main.index')) }}
-    {{ ui.theme_switch() }}
-  </header>
-  <main class="public-content" id="main">
-    {{ flashes }}
-    {% block public_content %}{% endblock %}
-  </main>
-  {% endif %}
 </body>
 </html>
