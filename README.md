@@ -56,9 +56,8 @@ Hap `.env` (i kopjuar nga `.env.example`) dhe plotëso vlerat:
 ```env
 SECRET_KEY=vendos-nje-vlere-te-rastesishme-te-gjate
 DATABASE_URL=postgresql+psycopg://piss_user:FJALEKALIMI@localhost:5432/piss_db
-AI_PROVIDER=groq,cerebras,mistral,gemini,ollama
+AI_PROVIDER=groq,mistral,gemini,ollama
 GROQ_API_KEY=
-CEREBRAS_API_KEY=
 MISTRAL_API_KEY=
 GEMINI_API_KEY=
 ```
@@ -96,17 +95,16 @@ Opsioni `--debug` është vetëm për zhvillim lokal.
 | Rendi | Shërbimi | Variablat në `.env` | Ku merret çelësi |
 |---|---|---|---|
 | 1 | Groq | `GROQ_API_KEY`, `GROQ_MODEL` | [console.groq.com](https://console.groq.com) |
-| 2 | Cerebras (provë e kufizuar) | `CEREBRAS_API_KEY`, `CEREBRAS_MODEL` | [cloud.cerebras.ai](https://cloud.cerebras.ai) |
-| 3 | Mistral | `MISTRAL_API_KEY`, `MISTRAL_MODEL` | [console.mistral.ai](https://console.mistral.ai) |
-| 4 | Gemini | `GEMINI_API_KEY`, `GEMINI_MODEL` | [aistudio.google.com](https://aistudio.google.com/apikey) |
-| 5 | Ollama (lokal) | `OLLAMA_BASE_URL`, `OLLAMA_MODEL` | Nuk kërkon çelës |
+| 2 | Mistral | `MISTRAL_API_KEY`, `MISTRAL_MODEL` | [console.mistral.ai](https://console.mistral.ai) |
+| 3 | Gemini | `GEMINI_API_KEY`, `GEMINI_MODEL` | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| 4 | Ollama (lokal) | `OLLAMA_BASE_URL`, `OLLAMA_MODEL` | Nuk kërkon çelës |
 
-Mbështetet edhe OpenRouter (`openrouter`, me `OPENROUTER_API_KEY`) si opsion shtesë. Shërbimet cloud kanë kufij përdorimi që vendosen nga vetë ofruesit.
+Mbështeten edhe OpenRouter (`openrouter`, me `OPENROUTER_API_KEY`) dhe Cerebras (`cerebras`, me `CEREBRAS_API_KEY`; nuk është më falas dhe kërkon kartë) si opsione shtesë. Shërbimet cloud kanë kufij përdorimi që vendosen nga vetë ofruesit.
 
 Si funksionon:
 
 - Shërbimet pa çelës API anashkalohen.
-- Kur Groq arrin limitin dhe në zinxhir ka Cerebras ose Mistral, kalohet menjëherë te ata. Përndryshe pritet pak, nëse limiti lirohet shpejt.
+- Kur Groq arrin limitin dhe në zinxhir pas tij ka Mistral (ose Cerebras), kalohet menjëherë te ai. Përndryshe pritet pak, nëse limiti lirohet shpejt.
 - Një përmbledhje ose test zgjat më së shumti `AI_TOTAL_TIMEOUT_SECONDS` (90 sekonda); pastaj shfaqet gabim.
 - Ollama provohet vetëm kur është i nisur dhe modeli është shkarkuar.
 - Kur një shërbim arrin limitin, nuk përgjigjet ose kthen përgjigje të pavlefshme, provohet tjetri.
@@ -115,24 +113,26 @@ Si funksionon:
 
 Kur përdor shërbimet cloud, teksti i materialit dërgohet te ofruesi përkatës. Për përpunim vetëm lokal vendos `AI_PROVIDER=ollama`.
 
-### Çelësi i Cerebras
+### Çelësi i Mistral (falas)
 
-Sipas [dokumentacionit zyrtar](https://inference-docs.cerebras.ai/support/rate-limits) (nëntor 2026), Cerebras **nuk ka nivel falas të përhershëm**. Llogaritë e reja marrin një provë me kredit prej 5 $ që skadon pas 30 ditësh, dhe për ta aktivizuar [kërkohet një metodë pagese](https://inference-docs.cerebras.ai/console/account-billing). Sipas tyre, pagesë bëhet vetëm nëse blen kredit shtesë; kushtet mund të ndryshojnë, prandaj kontrolloji para regjistrimit.
-
-1. Hap [cloud.cerebras.ai](https://cloud.cerebras.ai) dhe krijo llogari (ose hyr).
-2. Shto metodën e pagesës. Pa të, qasja në API mbetet joaktive.
-3. Në menynë e majtë zgjidh **API Keys**, pastaj **Generate API Key** dhe jepi një emër.
-4. Kopjo çelësin te `.env`:
+1. Hap [console.mistral.ai](https://console.mistral.ai) dhe hyr ose krijo llogari.
+2. Zgjidh planin falas (**Free**), pa kartë.
+3. Hap **API Keys**.
+4. Krijo çelësin (**New key**), jepi një emër dhe kopjoje menjëherë, sepse shfaqet vetëm një herë.
+5. Vendose te `.env`:
 
 ```env
-CEREBRAS_API_KEY=çelësi-yt
-CEREBRAS_MODEL=gpt-oss-120b
-AI_PROVIDER=groq,cerebras,gemini,ollama
+MISTRAL_API_KEY=çelësi-yt
+AI_PROVIDER=groq,mistral,gemini,ollama
 ```
 
-5. Rinise aplikacionin dhe kontrollo me `flask --app run.py ai-check`.
+6. Rinise aplikacionin dhe kontrollo me `flask --app run.py ai-check`.
 
-Prova ka limit prej 5 kërkesash në minutë për `gpt-oss-120b`. Pa çelës, Cerebras thjesht anashkalohet.
+Modeli i paracaktuar është `mistral-small-latest`; mund të ndryshohet me `MISTRAL_MODEL`.
+
+**Privatësia:** kërkesat në planin falas mund të përdoren nga Mistral për trajnimin e modeleve, pra edhe teksti i materialeve të tua. Sipas [qendrës së ndihmës](https://help.mistral.ai/en/articles/455207-can-i-opt-out-of-my-input-or-output-data-being-used-for-training), këtë mund ta çaktivizosh te [admin.mistral.ai](https://admin.mistral.ai), menyja **Privacy**.
+
+Kushtet e planit falas ndryshojnë. Në nëntor 2026, [udhëzuesi zyrtar](https://docs.mistral.ai/getting-started/quickstarts/studio/activate-and-generate-api-key) kërkon "një plan me qasje në API" dhe përmend shtimin e metodës së pagesës. Nëse konsola të kërkon kartë ose të bllokon çelësat, ose `ai-check` tregon HTTP 402 për Mistral, plani yt nuk ka qasje në API; kontrollo kushtet para se të vazhdosh.
 
 ### Ollama
 
