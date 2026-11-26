@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Cilësimet{% endblock %}
+{% block content %}
+<div class="page narrow-page">
+  <header class="page-header">
+    <h1>Cilësimet</h1>
+  </header>
+
+  <form method="post" action="{{ url_for('main.settings') }}" class="panel form-stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <fieldset class="field">
+      <legend><h2>Pamja</h2></legend>
+      {% for value, label, text in [('light', 'E çelët', 'Letër e ngrohtë me tekst të errët.'), ('dark', 'E errët', 'Sfond i errët për studim në mbrëmje.')] %}
+      <label class="option">
+        <input type="radio" name="theme" value="{{ value }}" {% if (current_user.theme == 'dark') == (value == 'dark') %}checked{% endif %}>
+        <span><strong>{{ label }}</strong><small>{{ text }}</small></span>
+      </label>
+      {% endfor %}
+    </fieldset>
+    <div class="actions">
+      <button class="button" type="submit" data-loading="Po ruhet…">Ruaj cilësimet</button>
+    </div>
+  </form>
+
+  <section class="account-details" aria-labelledby="account-title">
+    <div class="section-head"><h2 id="account-title">Llogaria</h2></div>
+    <dl>
+      <dt>Emri</dt><dd>{{ current_user.full_name }}</dd>
+      <dt>Email</dt><dd>{{ current_user.email }}</dd>
+    </dl>
+  </section>
+</div>
+{% endblock %}

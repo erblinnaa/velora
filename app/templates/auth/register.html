@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Krijo llogari{% endblock %}
+{% block public_content %}
+<div class="narrow">
+  <h1>Krijo llogari</h1>
+  <p class="lead">Të duhen vetëm emri, email-i dhe një fjalëkalim.</p>
+
+  <form method="post" class="panel form-stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="theme" value="light" data-theme-field>
+    <div class="field">
+      <label for="full_name">Emri i plotë</label>
+      <input id="full_name" type="text" name="full_name" value="{{ request.form.get('full_name', '') }}" autocomplete="name" minlength="2" maxlength="120" required {{ ui.invalid(errors, 'full_name') }}>
+      {{ ui.field_error(errors, 'full_name') }}
+    </div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" type="email" name="email" value="{{ request.form.get('email', '') }}" autocomplete="email" maxlength="255" required {{ ui.invalid(errors, 'email') }}>
+      {{ ui.field_error(errors, 'email') }}
+    </div>
+    <div class="field">
+      <label for="password">Fjalëkalimi <span class="hint">të paktën 8 karaktere</span></label>
+      <input id="password" type="password" name="password" autocomplete="new-password" minlength="8" required {{ ui.invalid(errors, 'password') }}>
+      {{ ui.field_error(errors, 'password') }}
+    </div>
+    <button class="button" type="submit" data-loading="Po krijohet llogaria…">Krijo llogari</button>
+  </form>
+
+  <p class="after-form">Ke llogari? <a href="{{ url_for('main.login') }}">Hyr këtu</a></p>
+</div>
+{% endblock %}

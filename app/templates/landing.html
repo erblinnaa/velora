@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Studimi yt në një vend{% endblock %}
+{% block public_content %}
+<div class="landing">
+  <h1>Lëndët, materialet dhe testet e tua në një vend</h1>
+  <p class="lead">Ruaj shënimet e ligjëratave, krijo përmbledhje me AI dhe kontrollo veten me teste të ndërtuara nga materiali yt.</p>
+  <div class="actions">
+    <a class="button" href="{{ url_for('main.register') }}">Krijo llogari</a>
+    <a class="button button-secondary" href="{{ url_for('main.login') }}">Hyr në llogari</a>
+  </div>
+
+  <h2>Si funksionon</h2>
+  <ol class="step-list">
+    {% for title, text in [
+      ('Krijo lëndën', 'Një lëndë mban bashkë materialet dhe testet e saj.'),
+      ('Shto material', 'Ngjit shënimet ose ngarko një PDF me tekst.'),
+      ('Testo veten', 'Përgjigju pyetjeve dhe shiko rezultatet te historiku.')] %}
+    <li class="step">
+      <span class="step-number" aria-hidden="true">{{ loop.index }}</span>
+      <div><h3>{{ title }}</h3><p>{{ text }}</p></div>
+    </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endblock %}

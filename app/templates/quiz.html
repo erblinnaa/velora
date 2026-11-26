@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }}{% endblock %}
+{% block content %}
+<div class="page narrow-page">
+  <p class="back"><a href="{{ url_for('main.subject_detail', subject_id=quiz.subject_id) }}">Kthehu te {{ quiz.subject.name }}</a></p>
+  <header class="page-header">
+    <div>
+      <h1>{{ quiz.title }}</h1>
+      <p class="muted">{{ quiz.questions_json|length }} pyetje. Zgjidh vetëm një alternativë për secilën.</p>
+    </div>
+  </header>
+
+  <form method="post" action="{{ url_for('main.submit_quiz', quiz_id=quiz.id) }}" class="quiz-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% for question in quiz.questions_json %}
+      {% set question_index = loop.index0 %}
+      <fieldset class="panel question">
+        <legend class="visually-hidden">Pyetja {{ loop.index }}</legend>
+        <h2><span class="question-number">{{ loop.index }}.</span> {{ question.question }}</h2>
+        {% for option in question.options %}
+        <label class="option">
+          <input type="radio" name="answer_{{ question_index }}" value="{{ loop.index0 }}" required>
+          <span>{{ option }}</span>
+        </label>
+        {% endfor %}
+      </fieldset>
+    {% endfor %}
+    <button class="button" type="submit" data-loading="Po vlerësohet testi…">Përfundo testin</button>
+  </form>
+</div>
+{% endblock %}

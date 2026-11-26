@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}{{ subject.name }}{% endblock %}
+{% block content %}
+{% set materials = subject.materials|sort(attribute='created_at', reverse=true) %}
+<div class="page">
+  <p class="back"><a href="{{ url_for('main.dashboard') }}">Të gjitha lëndët</a></p>
+  <header class="page-header">
+    <div class="titled">
+      {{ ui.spine(subject.color) }}
+      <div>
+        <h1>{{ subject.name }}</h1>
+        {% if subject.description %}<p class="muted">{{ subject.description }}</p>{% endif %}
+      </div>
+    </div>
+    <div class="actions">
+      <a class="button button-secondary" href="{{ url_for('main.edit_subject', subject_id=subject.id) }}">Ndrysho</a>
+      <form method="post" action="{{ url_for('main.delete_subject', subject_id=subject.id) }}" data-confirm="Të fshihet kjo lëndë me të gjitha materialet, testet dhe rezultatet e saj?">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="button button-danger" type="submit">Fshi lëndën</button>
+      </form>
+    </div>
+  </header>
+
+  <div class="columns">
+    <div class="stack">
+      <section aria-labelledby="materials-title">
+        <div class="section-head"><h2 id="materials-title">Materialet</h2></div>
+        {% if materials %}
+        <ul class="index-list">
+          {% for material in materials %}
+          <li class="material">
+            <h3>{{ material.title }}</h3>
+            <p class="meta">
+              {{ 'PDF' if material.mime_type == 'application/pdf' else 'Tekst' }},
+              shtuar më {{ material.created_at.strftime('%d.%m.%Y') }},
+              {{ ui.count(material.content|length, 'karakter', 'karaktere') }}
+            </p>
+            <p class="excerpt">{{ material.content[:180] }}{% if material.content|length > 180 %}…{% endif %}</p>
+            <div class="actions">
+              {% if material.summary %}
+              <a class="button button-small" href="{{ url_for('main.material_summary', material_id=material.id) }}">Shiko përmbledhjen</a>
+              {% else %}
+              <form method="post" action="{{ url_for('main.summarize', material_id=material.id) }}" data-ai>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="button button-small" type="submit" data-loading="Po krijohet përmbledhja…">Përmblidh me AI</button>
+              </form>
+              {% endif %}
+              <form method="post" action="{{ url_for('main.delete_material', material_id=material.id) }}" data-confirm="Të fshihet materiali “{{ material.title }}”?">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="link-button danger-text" type="submit">Fshi materialin</button>
+              </form>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty">
+          <p>Asnjë material ende. Shto tekst ose një PDF që të krijosh përmbledhje dhe teste.</p>
+          <a class="button button-secondary" href="#shto-material">Shto material</a>
+        </div>
+        {% endif %}
+      </section>
+
+      <section aria-labelledby="quizzes-title">
+        <div class="section-head"><h2 id="quizzes-title">Testet</h2></div>
+        {% if subject.quizzes %}
+        <ul class="index-list">
+          {% for quiz in subject.quizzes|sort(attribute='created_at', reverse=true) %}
+          <li class="result-row">
+            <div>
+              <a href="{{ url_for('main.quiz_detail', quiz_id=quiz.id) }}">{{ quiz.title }}</a>
+              <span>{{ ui.count(quiz.questions_json|length, 'pyetje', 'pyetje') }}, krijuar më {{ quiz.created_at.strftime('%d.%m.%Y') }}</span>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-note">Ende nuk ka teste. <a href="#krijo-test">Krijo testin e parë</a>.</p>
+        {% endif %}
+      </section>
+    </div>
+
+    <div class="stack">
+      <section class="panel" id="shto-material" aria-labelledby="add-title">
+        <h2 id="add-title">Shto material</h2>
+        <form method="post" action="{{ url_for('main.add_material', subject_id=subject.id) }}" enctype="multipart/form-data" class="form-stack">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          {% if errors %}<p class="form-error" role="alert">Materiali nuk u ruajt. Kontrollo fushat e shënuara.</p>{% endif %}
+          <div class="field">
+            <label for="title">Titulli</label>
+            <input id="title" type="text" name="title" value="{{ request.form.get('title', '') if errors else '' }}" placeholder="p.sh. Ligjërata 1" maxlength="180" required {{ ui.invalid(errors, 'title') }}>
+            {{ ui.field_error(errors, 'title') }}
+          </div>
+          <div class="field">
+            <label for="content">Teksti <span class="hint">ose zgjidh një PDF</span></label>
+            <textarea id="content" name="content" rows="7" placeholder="Ngjit materialin këtu" {{ ui.invalid(errors, 'content') }}>{{ request.form.get('content', '') if errors else '' }}</textarea>
+            {{ ui.field_error(errors, 'content') }}
+          </div>
+          <div class="field">
+            <span class="label">Dokumenti PDF <span class="hint">deri në {{ (config.MAX_CONTENT_LENGTH / 1048576)|round|int }} MB</span></span>
+            <div class="file-field">
+              <input id="pdf_file" class="visually-hidden" type="file" name="pdf_file" accept="application/pdf,.pdf" data-max-bytes="{{ config.MAX_CONTENT_LENGTH }}" {{ ui.invalid(errors, 'pdf_file') }}>
+              <label for="pdf_file" class="button button-secondary button-small">Zgjidh PDF</label>
+              <span class="file-name" aria-live="polite" data-empty="Asnjë dokument i zgjedhur">Asnjë dokument i zgjedhur</span>
+            </div>
+            {{ ui.field_error(errors, 'pdf_file') }}
+          </div>
+          <button class="button" type="submit" data-loading="Po ruhet materiali…">Ruaj materialin</button>
+        </form>
+      </section>
+
+      <section class="panel" id="krijo-test" aria-labelledby="quiz-title">
+        <h2 id="quiz-title">Krijo test me AI</h2>
+        {% if materials %}
+        <form method="post" action="{{ url_for('main.create_quiz', subject_id=subject.id) }}" class="form-stack" data-ai>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field">
+            <label for="material_id">Materiali</label>
+            <select id="material_id" name="material_id" required>
+              <option value="">Zgjidh materialin</option>
+              {% for material in materials %}
+              <option value="{{ material.id }}" {% if materials|length == 1 %}selected{% endif %}>{{ material.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="question_count">Numri i pyetjeve</label>
+            <select id="question_count" name="question_count">
+              <option value="5">5 pyetje</option>
+              <option value="8">8 pyetje</option>
+              <option value="10">10 pyetje</option>
+            </select>
+          </div>
+          <button class="button" type="submit" data-loading="Po krijohen pyetjet…">Krijo testin</button>
+          <p class="hint">Pyetjet kanë nga katër alternativa. Materiali duhet të ketë të paktën {{ min_ai_chars }} karaktere.</p>
+        </form>
+        {% else %}
+        <p class="muted">Për të krijuar test, <a href="#shto-material">shto një material</a> fillimisht.</p>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

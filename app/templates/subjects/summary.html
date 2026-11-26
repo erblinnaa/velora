@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Përmbledhja: {{ material.title }}{% endblock %}
+{% block content %}
+<div class="page narrow-page">
+  <p class="back"><a href="{{ url_for('main.subject_detail', subject_id=material.subject_id) }}">Kthehu te {{ material.subject.name }}</a></p>
+  <header class="page-header">
+    <div>
+      <h1>{{ material.title }}</h1>
+      <p class="muted">Përmbledhje e krijuar me AI. Krahasoje me materialin para se të mbështetesh tek ajo.</p>
+    </div>
+  </header>
+
+  <article class="panel reading">
+    {# Formati i shërbimit AI: titulli, pastaj seksione "Emri:" me rreshta "- " #}
+    {% for block in material.summary.replace('\r\n', '\n').split('\n\n') if block.strip() %}
+      {% set lines = block.strip().split('\n') %}
+      {% set has_heading = lines[0].endswith(':') and lines|length > 1 %}
+      {% set body = lines[1:] if has_heading else lines %}
+      {% if has_heading %}<h3>{{ lines[0][:-1] }}</h3>{% endif %}
+      {% if loop.first and not has_heading and lines|length == 1 %}
+        <h2>{{ lines[0] }}</h2>
+      {% else %}
+        {% set bullets = [] %}
+        {% for line in body if line.startswith('- ') %}{% set _ = bullets.append(line[2:]) %}{% endfor %}
+        {% if bullets|length == body|length %}
+          <ul>{% for item in bullets %}<li>{{ item }}</li>{% endfor %}</ul>
+        {% else %}
+          <p class="pre">{{ body|join('\n') }}</p>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  </article>
+
+  <div class="actions below">
+    <a class="button button-secondary" href="{{ url_for('main.subject_detail', subject_id=material.subject_id) }}">Kthehu te lënda</a>
+    <form method="post" action="{{ url_for('main.delete_summary', material_id=material.id) }}" data-confirm="Të fshihet vetëm përmbledhja? Materiali origjinal ruhet.">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="button button-danger" type="submit">Fshi përmbledhjen</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

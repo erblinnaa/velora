@@ -1,0 +1,31 @@
+{% import "_macros.html" as ui %}
+<!doctype html>
+<html lang="sq" data-theme="light">
+<head>
+  {{ ui.head(title) }}
+  <script>
+    try {
+      var saved = localStorage.getItem('velora-theme');
+      if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+    } catch (e) {}
+  </script>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</head>
+<body>
+  <header class="public-bar">
+    {{ ui.brand(url_for('main.index')) }}
+    {{ ui.theme_switch() }}
+  </header>
+  <main class="public-content" id="main">
+    <div class="narrow">
+      <h1>{{ title }}</h1>
+      <p class="lead">{{ message }}</p>
+      <div class="actions">
+        <a class="button" href="{{ url_for('main.index') }}">Shko te faqja kryesore</a>
+        <button type="button" class="button button-secondary" data-back>Kthehu mbrapa</button>
+      </div>
+      <p class="muted error-code">Kodi i gabimit: {{ code }}</p>
+    </div>
+  </main>
+</body>
+</html>

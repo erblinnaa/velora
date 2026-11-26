@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Paneli{% endblock %}
+{% block content %}
+{% set without_material = subjects|rejectattr('materials')|list %}
+{% set with_material = subjects|selectattr('materials')|list %}
+{% set done = [subjects|length > 0, total_materials > 0, attempt_count > 0] %}
+{% set current = 0 if not done[0] else (1 if not done[1] else 2) %}
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>Paneli yt i studimit</h1>
+      <p class="muted">Mirë se erdhe, {{ current_user.full_name.split()[0] }}.</p>
+    </div>
+    {% if subjects %}<a class="button" href="{{ url_for('main.create_subject') }}">Shto lëndë</a>{% endif %}
+  </header>
+
+  {% if not done[2] %}
+  <section class="steps" aria-labelledby="steps-title">
+    <div class="steps-head">
+      <h2 id="steps-title">Hapat e radhës</h2>
+      <p class="muted">{{ done|select|list|length }} nga 3 të kryera</p>
+    </div>
+    {% set new_url = url_for('main.create_subject') %}
+    {% set material_target = (without_material or subjects)|last if subjects else none %}
+    {% set steps = [
+      ('Krijo lëndën e parë', 'Një lëndë mban bashkë materialet dhe testet e saj.',
+        'Krijo lëndë', new_url),
+      ('Shto material', 'Ngjit shënimet ose ngarko një PDF të ligjëratës.',
+        'Shto material', url_for('main.subject_detail', subject_id=material_target.id, _anchor='shto-material') if material_target else new_url),
+      ('Bëj testin e parë', 'Velora përgatit pyetje nga materiali yt dhe ruan rezultatin.',
+        'Bëj një test', url_for('main.subject_detail', subject_id=with_material[0].id, _anchor='krijo-test') if with_material else new_url),
+    ] %}
+    <ol class="step-list">
+      {% for title, text, action, href in steps %}
+      <li class="step {% if done[loop.index0] %}is-done{% elif loop.index0 == current %}is-current{% endif %}">
+        <span class="step-number" aria-hidden="true">{{ loop.index }}</span>
+        <div>
+          <h3>{{ title }}</h3>
+          <p>{{ text }}</p>
+        </div>
+        <div class="step-action">
+          {% if done[loop.index0] %}<span class="step-done">U krye</span>
+          {% elif loop.index0 == current %}<a class="button" href="{{ href }}">{{ action }}</a>
+          {% else %}<a href="{{ href }}">{{ action }}</a>{% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+
+  {% if subjects %}
+    {% if total_materials or total_quizzes or attempt_count %}
+    <dl class="stats">
+      <div><dt>{{ 'Lëndë' }}</dt><dd>{{ subjects|length }}</dd></div>
+      {% if total_materials %}<div><dt>{{ 'Material' if total_materials == 1 else 'Materiale' }}</dt><dd>{{ total_materials }}</dd></div>{% endif %}
+      {% if total_quizzes %}<div><dt>{{ 'Test' if total_quizzes == 1 else 'Teste' }}</dt><dd>{{ total_quizzes }}</dd></div>{% endif %}
+      {% if average_score is not none %}<div><dt>Mesatarja në teste</dt><dd>{{ average_score }}%</dd></div>{% endif %}
+    </dl>
+    {% endif %}
+
+    <div class="columns {% if not attempts %}single{% endif %}">
+      <section aria-labelledby="subjects-title">
+        <div class="section-head"><h2 id="subjects-title">Lëndët e tua</h2></div>
+        <ul class="index-list">
+          {% for subject in subjects %}
+          <li class="subject-row">
+            {{ ui.spine(subject.color) }}
+            <div class="subject-text">
+              <h3><a class="row-link" href="{{ url_for('main.subject_detail', subject_id=subject.id) }}">{{ subject.name }}</a></h3>
+              {% if subject.description %}<p>{{ subject.description }}</p>{% endif %}
+            </div>
+            <div class="counts">
+              {% if subject.materials %}
+              <span>{{ ui.count(subject.materials|length, 'material', 'materiale') }}</span>
+              {% else %}
+              <a class="row-action" href="{{ url_for('main.subject_detail', subject_id=subject.id, _anchor='shto-material') }}" aria-label="Shto material te {{ subject.name }}">Shto material</a>
+              {% endif %}
+              <span>{{ ui.count(subject.quizzes|length, 'test', 'teste') }}</span>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      {% if attempts %}
+      <section aria-labelledby="results-title">
+        <div class="section-head">
+          <h2 id="results-title">Rezultatet e fundit</h2>
+          <a href="{{ url_for('main.history') }}">Gjithë historiku</a>
+        </div>
+        <ul class="index-list">
+          {% for attempt in attempts %}
+          <li class="result-row">
+            <div>
+              <a href="{{ url_for('main.quiz_detail', quiz_id=attempt.quiz_id) }}">{{ attempt.quiz.title }}</a>
+              <span>{{ attempt.created_at.strftime('%d.%m.%Y') }}, {{ attempt.score }} nga {{ attempt.total_questions }} të sakta</span>
+            </div>
+            <strong class="score">{{ ui.percent(attempt) }}</strong>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

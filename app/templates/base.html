@@ -1,0 +1,84 @@
+{% import "_macros.html" as ui %}
+{% set signed_in = current_user.is_authenticated %}
+<!doctype html>
+<html lang="sq" data-theme="{{ current_user.theme if signed_in and current_user.theme in ['dark', 'light'] else 'light' }}">
+<head>
+  {% set page_title %}{% block title %}Studim{% endblock %}{% endset %}
+  {{ ui.head(page_title) }}
+  <script>
+    // Para shfaqjes së faqes: llogaria vendos temën, përndryshe shfletuesi.
+    (function () {
+      var root = document.documentElement;
+      try {
+        {% if signed_in %}
+        localStorage.setItem('velora-theme', root.dataset.theme);
+        {% else %}
+        var saved = localStorage.getItem('velora-theme');
+        if (saved === 'light' || saved === 'dark') root.dataset.theme = saved;
+        {% endif %}
+      } catch (e) {}
+    })();
+  </script>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</head>
+<body {% if signed_in %}data-theme-url="{{ url_for('main.settings') }}" data-csrf="{{ csrf_token() }}"{% endif %}>
+  {% set flashes %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-stack">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}" role="{{ 'alert' if category == 'danger' else 'status' }}">
+              <p>{{ message }}</p>
+              <button type="button" class="flash-close" data-dismiss>Mbyll</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+  {% endset %}
+
+  <a class="skip-link" href="#main">Kalo te përmbajtja</a>
+
+  {% if signed_in %}
+  <div class="app-shell">
+    <header class="topbar">
+      {{ ui.brand(url_for('main.dashboard')) }}
+      <button type="button" class="button button-secondary" data-nav-toggle aria-controls="sidebar" aria-expanded="false">Menyja</button>
+    </header>
+    <div class="scrim" data-nav-close></div>
+    <aside class="sidebar" id="sidebar">
+      {{ ui.brand(url_for('main.dashboard')) }}
+      <nav class="side-nav" aria-label="Kryesore">
+        {% for endpoint, label in [('main.dashboard', 'Paneli'), ('main.history', 'Historiku'), ('main.settings', 'Cilësimet')] %}
+        <a class="nav-link" href="{{ url_for(endpoint) }}" {% if request.endpoint == endpoint %}aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+      </nav>
+      <div class="sidebar-bottom">
+        {{ ui.theme_switch() }}
+        <div class="account">
+          <strong>{{ current_user.full_name }}</strong>
+          <span>{{ current_user.email }}</span>
+          <form method="post" action="{{ url_for('main.logout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="link-button" type="submit">Dil nga llogaria</button>
+          </form>
+        </div>
+      </div>
+    </aside>
+    <main class="main-content" id="main">
+      {{ flashes }}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% else %}
+  <header class="public-bar">
+    {{ ui.brand(url_for('main.index')) }}
+    {{ ui.theme_switch() }}
+  </header>
+  <main class="public-content" id="main">
+    {{ flashes }}
+    {% block public_content %}{% endblock %}
+  </main>
+  {% endif %}
+</body>
+</html>

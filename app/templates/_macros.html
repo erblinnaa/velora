@@ -1,0 +1,36 @@
+{% macro head(title) %}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }} | Velora</title>
+<link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+{% endmacro %}
+
+{% macro brand(href) %}
+<a href="{{ href }}" class="brand"><span class="brand-mark" aria-hidden="true">V</span>Velora</a>
+{% endmacro %}
+
+{% macro theme_switch() %}
+<fieldset class="theme-switch">
+  <legend class="visually-hidden">Pamja</legend>
+  <button type="button" data-set-theme="light" aria-pressed="false">E çelët</button>
+  <button type="button" data-set-theme="dark" aria-pressed="false">E errët</button>
+</fieldset>
+{% endmacro %}
+
+{% macro field_error(errors, name) %}
+{% if errors.get(name) %}<p class="field-error" id="{{ name }}-error">{{ errors[name] }}</p>{% endif %}
+{% endmacro %}
+
+{# Atributet që lidhin një fushë me mesazhin e gabimit #}
+{% macro invalid(errors, name) %}{% if errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}{% endmacro %}
+
+{% macro percent(attempt) %}{{ (attempt.score / attempt.total_questions * 100)|round|int if attempt.total_questions else 0 }}%{% endmacro %}
+
+{% macro count(number, one, many) %}{{ number }} {{ one if number == 1 else many }}{% endmacro %}
+
+{# Ngjyra e vjetër e parazgjedhur shfaqet me të gjelbrën e re #}
+{% macro spine(color) %}<span class="spine" {% if color|lower != '#6c63ff' %}style="--spine: {{ color }}"{% endif %} aria-hidden="true"></span>{% endmacro %}
