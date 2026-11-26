@@ -7,7 +7,7 @@
 
 <div class="h2"><h2>Rezultatet</h2></div>
 {% if attempts %}
-<table class="history">
+<table class="stacked">
   <thead>
     <tr><th scope="col">Testi</th><th scope="col">Lënda</th><th scope="col" class="col-score">Rezultati</th><th scope="col" class="col-date">Data</th></tr>
   </thead>
@@ -17,7 +17,7 @@
       <td><a class="nm" href="{{ url_for('main.quiz_detail', quiz_id=attempt.quiz_id) }}">{{ attempt.quiz.title }}</a></td>
       <td data-label="Lënda"><a class="nm" href="{{ url_for('main.subject_detail', subject_id=attempt.quiz.subject_id) }}">{{ ui.square(attempt.quiz.subject.color) }}{{ attempt.quiz.subject.name }}</a></td>
       <td data-label="Rezultati" class="numeric"><a class="nm" href="{{ url_for('main.attempt_detail', attempt_id=attempt.id) }}" aria-label="Shiko përgjigjet: {{ attempt.score }} nga {{ attempt.total_questions }}">{{ attempt.score }}/{{ attempt.total_questions }} {{ ui.score_tag(attempt) }}</a></td>
-      <td data-label="Data" class="numeric">{{ attempt.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+      <td data-label="Data" class="numeric">{{ (attempt.created_at|local).strftime('%d.%m.%Y %H:%M') }}</td>
     </tr>
     {% endfor %}
   </tbody>

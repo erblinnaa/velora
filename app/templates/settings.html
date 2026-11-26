@@ -24,5 +24,9 @@
     <dt>Emri</dt><dd>{{ current_user.full_name }}</dd>
     <dt>Email</dt><dd>{{ current_user.email }}</dd>
   </dl>
+  <form method="post" action="{{ url_for('main.logout') }}" class="phone-only sign-out">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="button-outline" type="submit">Dil nga llogaria</button>
+  </form>
 </section>
 {% endblock %}

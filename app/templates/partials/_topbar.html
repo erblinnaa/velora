@@ -1,0 +1,7 @@
+{# Shiriti i sipërm në telefon #}
+{% import "_macros.html" as ui %}
+{% set names = current_user.full_name.split() %}
+<header class="topbar">
+  {{ ui.brand(url_for('main.dashboard')) }}
+  <a class="avatar" href="{{ url_for('main.settings') }}" aria-label="Cilësimet e llogarisë së {{ current_user.full_name }}">{{ (names[0][0] ~ (names[-1][0] if names|length > 1 else ''))|upper }}</a>
+</header>

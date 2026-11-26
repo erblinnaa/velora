@@ -15,7 +15,7 @@
   <dt>Testi</dt><dd>{{ attempt.quiz.title }}</dd>
   <dt>Rezultati</dt><dd>{{ ui.score_tag(attempt) }}</dd>
   <dt>Përgjigje të sakta</dt><dd>{{ attempt.score }} nga {{ attempt.total_questions }}</dd>
-  <dt>Data</dt><dd>{{ attempt.created_at.strftime('%d.%m.%Y %H:%M') }}</dd>
+  <dt>Data</dt><dd>{{ (attempt.created_at|local).strftime('%d.%m.%Y %H:%M') }}</dd>
 </dl>
 
 <div class="actions below">

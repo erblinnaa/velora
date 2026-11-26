@@ -1,0 +1,22 @@
+{# Menyja e poshtme në telefon dhe fleta që hapet nga butoni "+" #}
+{% import "_macros.html" as ui %}
+{% set here = request.endpoint %}
+{% set in_subjects = here in ['main.subject_list', 'main.subject_detail', 'main.create_subject', 'main.edit_subject', 'main.add_material', 'main.material_summary', 'main.quiz_detail'] %}
+{% macro tab(endpoint, label, active) %}
+<a class="tab" href="{{ url_for(endpoint) }}" {% if active %}aria-current="page"{% endif %}>{{ label }}</a>
+{% endmacro %}
+<nav class="bottom-nav" aria-label="Menyja kryesore">
+  {{ tab('main.dashboard', 'Paneli', here == 'main.dashboard') }}
+  {{ tab('main.subject_list', 'Lëndët', in_subjects) }}
+  {# Pa JavaScript butoni hap faqen e lëndës së re #}
+  <a class="plus" href="{{ url_for('main.create_subject') }}" aria-label="Shto" data-sheet-open aria-controls="add-sheet">+</a>
+  {{ tab('main.history', 'Historiku', here in ['main.history', 'main.attempt_detail']) }}
+  {{ tab('main.settings', 'Cilësimet', here == 'main.settings') }}
+</nav>
+
+<dialog class="sheet" id="add-sheet" aria-labelledby="sheet-title">
+  <h2 id="sheet-title">Shto</h2>
+  <a class="sheet-item" href="{{ url_for('main.create_subject') }}">Lëndë e re</a>
+  {{ ui.add_material(side.subjects, 'sheet') }}
+  <button class="sheet-item muted" type="button" data-sheet-close>Mbyll</button>
+</dialog>

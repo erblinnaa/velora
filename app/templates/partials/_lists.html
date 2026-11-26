@@ -1,0 +1,35 @@
+{# Lista e lëndëve: tabelë në kompjuter, listë në telefon. Përdoret te paneli dhe te "Lëndët". #}
+{% import "_macros.html" as ui %}
+
+{% macro subjects(rows) %}
+{% if rows %}
+<table class="grid-table subjects">
+  <thead><tr><th scope="col">Lënda</th><th scope="col" class="col-progress">Materiale të testuara</th><th scope="col" class="col-score">Testi i fundit</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    {% set materials = ui.count(row.materials, 'material', 'materiale') %}
+    <tr>
+      <td class="c-name">
+        <a class="cell-link" href="{{ url_for('main.subject_detail', subject_id=row.subject.id) }}">
+          <span class="name">{{ ui.square(row.subject.color) }}{{ row.subject.name }}</span>
+          <span class="ds desktop-only">{{ materials }} · {{ ui.count(row.quizzes, 'test', 'teste') }}</span>
+          <span class="ds phone-only">{{ materials }} · {{ row.tested }} nga {{ row.materials }} të testuara</span>
+        </a>
+      </td>
+      <td class="c-progress">
+        <span class="numeric desktop-only">{{ row.tested }} nga {{ row.materials }}</span>
+        {{ ui.bar((row.tested / row.materials * 100)|round|int if row.materials else 0) }}
+      </td>
+      <td class="c-score">{% if row.last %}{{ ui.score_tag(row.last) }}{% else %}<span class="tag tag-warn">Pa test</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+    <tr class="new-row"><td colspan="3"><a class="cell-link muted" href="{{ url_for('main.create_subject') }}">+ Lëndë e re</a></td></tr>
+  </tbody>
+</table>
+{% else %}
+<div class="blank">
+  <p>Ende nuk ke asnjë lëndë.</p>
+  <a class="button" href="{{ url_for('main.create_subject') }}">Lëndë e re</a>
+</div>
+{% endif %}
+{% endmacro %}

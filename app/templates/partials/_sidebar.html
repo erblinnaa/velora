@@ -1,37 +1,31 @@
-{# Shiriti anësor i përbashkët për të gjitha faqet e përdoruesit të kyçur #}
+{# Shiriti anësor për kompjuter. Merr `side` nga base.html. #}
 {% import "_macros.html" as ui %}
-{% set side = sidebar_data() %}
 <aside class="sidebar" id="sidebar">
-  <div class="top">
-    {{ ui.brand(url_for('main.dashboard')) }}
-    <button class="menu" type="button" aria-controls="sidebar-menu" aria-expanded="false">Menyja</button>
-  </div>
+  {{ ui.brand(url_for('main.dashboard')) }}
 
-  <div class="menu-body" id="sidebar-menu">
-    <nav aria-label="Kryesore">
-      {% for endpoint, label in [('main.dashboard', 'Paneli'), ('main.history', 'Historiku'), ('main.settings', 'Cilësimet')] %}
-      <a class="it" href="{{ url_for(endpoint) }}" {% if request.endpoint == endpoint %}aria-current="page"{% endif %}>{{ label }}{% if endpoint == 'main.history' and side.attempt_count %} <span class="c">{{ side.attempt_count }}</span>{% endif %}</a>
-      {% endfor %}
-    </nav>
+  <nav aria-label="Kryesore">
+    {% for endpoint, label in [('main.dashboard', 'Paneli'), ('main.history', 'Historiku'), ('main.settings', 'Cilësimet')] %}
+    <a class="it" href="{{ url_for(endpoint) }}" {% if request.endpoint == endpoint %}aria-current="page"{% endif %}>{{ label }}{% if endpoint == 'main.history' and side.attempt_count %} <span class="c">{{ side.attempt_count }}</span>{% endif %}</a>
+    {% endfor %}
+  </nav>
 
-    <nav aria-labelledby="sidebar-subjects">
-      <div class="gl" id="sidebar-subjects">Lëndët</div>
-      {% for subject in side.subjects %}
-      <a class="it" href="{{ url_for('main.subject_detail', subject_id=subject.id) }}" {% if request.view_args and request.view_args.get('subject_id') == subject.id %}aria-current="page"{% endif %}>
-        <span>{{ ui.square(subject.color) }}{{ subject.name }}</span>
-        <span class="c" title="{{ ui.count(subject.material_count, 'material', 'materiale') }}">{{ subject.material_count }}</span>
-      </a>
-      {% endfor %}
-      <a class="it" href="{{ url_for('main.create_subject') }}" {% if request.endpoint == 'main.create_subject' %}aria-current="page"{% endif %}>+ Lëndë e re</a>
-    </nav>
+  <nav aria-labelledby="sidebar-subjects">
+    <div class="gl" id="sidebar-subjects">Lëndët</div>
+    {% for subject in side.subjects %}
+    <a class="it" href="{{ url_for('main.subject_detail', subject_id=subject.id) }}" {% if request.view_args and request.view_args.get('subject_id') == subject.id %}aria-current="page"{% endif %}>
+      <span>{{ ui.square(subject.color) }}{{ subject.name }}</span>
+      <span class="c" title="{{ ui.count(subject.material_count, 'material', 'materiale') }}">{{ subject.material_count }}</span>
+    </a>
+    {% endfor %}
+    <a class="it" href="{{ url_for('main.create_subject') }}" {% if request.endpoint == 'main.create_subject' %}aria-current="page"{% endif %}>+ Lëndë e re</a>
+  </nav>
 
-    <div class="ft">
-      {{ ui.theme_switch() }}
-      <div><b>{{ current_user.full_name }}</b><br>{{ current_user.email }}</div>
-      <form method="post" action="{{ url_for('main.logout') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="link-button" type="submit">Dil nga llogaria</button>
-      </form>
-    </div>
+  <div class="ft">
+    {{ ui.theme_switch() }}
+    <div><b>{{ current_user.full_name }}</b><br>{{ current_user.email }}</div>
+    <form method="post" action="{{ url_for('main.logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="link-button" type="submit">Dil nga llogaria</button>
+    </form>
   </div>
 </aside>

@@ -61,9 +61,9 @@
   </details>
 
   {% if materials %}
-  <table>
+  <table class="stacked">
     <thead>
-      <tr><th scope="col">Materiali</th><th scope="col" class="col-date hide">Shtuar</th><th scope="col" class="col-actions">Veprimet</th></tr>
+      <tr><th scope="col">Materiali</th><th scope="col" class="col-date">Shtuar</th><th scope="col" class="col-actions">Veprimet</th></tr>
     </thead>
     <tbody>
       {% for material in materials %}
@@ -73,7 +73,7 @@
           <span class="ds">{{ 'PDF' if material.mime_type == 'application/pdf' else 'Tekst' }} · {{ ui.count(material.content|length, 'karakter', 'karaktere') }}</span>
           <span class="ds">{{ material.content[:180] }}{% if material.content|length > 180 %}…{% endif %}</span>
         </td>
-        <td class="numeric hide">{{ material.created_at.strftime('%d.%m.%Y') }}</td>
+        <td class="numeric" data-label="Shtuar">{{ (material.created_at|local).strftime('%d.%m.%Y') }}</td>
         <td>
           <div class="cell-actions">
             {% if material.summary %}
@@ -133,21 +133,21 @@
   </details>
 
   {% if quizzes %}
-  <table>
+  <table class="stacked">
     <thead>
-      <tr><th scope="col">Testi</th><th scope="col" class="col-narrow">Pyetje</th><th scope="col" class="col-date hide">Krijuar</th><th scope="col" class="col-last">Përpjekjet</th></tr>
+      <tr><th scope="col">Testi</th><th scope="col" class="col-narrow">Pyetje</th><th scope="col" class="col-date">Krijuar</th><th scope="col" class="col-last">Përpjekjet</th></tr>
     </thead>
     <tbody>
       {% for quiz in quizzes %}
       <tr>
         <td><a class="nm" href="{{ url_for('main.quiz_detail', quiz_id=quiz.id) }}">{{ quiz.title }}</a></td>
-        <td class="numeric">{{ quiz.questions_json|length }}</td>
-        <td class="numeric hide">{{ quiz.created_at.strftime('%d.%m.%Y') }}</td>
-        <td>
+        <td class="numeric" data-label="Pyetje">{{ quiz.questions_json|length }}</td>
+        <td class="numeric" data-label="Krijuar">{{ (quiz.created_at|local).strftime('%d.%m.%Y') }}</td>
+        <td data-label="Përpjekjet">
           {% if quiz.attempts %}
           <ul class="attempts">
             {% for attempt in quiz.attempts|sort(attribute='created_at', reverse=true) %}
-            <li><a href="{{ url_for('main.attempt_detail', attempt_id=attempt.id) }}">{{ ui.score_tag(attempt) }} {{ attempt.created_at.strftime('%d.%m.%Y') }}</a></li>
+            <li><a href="{{ url_for('main.attempt_detail', attempt_id=attempt.id) }}">{{ ui.score_tag(attempt) }} {{ (attempt.created_at|local).strftime('%d.%m.%Y') }}</a></li>
             {% endfor %}
           </ul>
           {% else %}

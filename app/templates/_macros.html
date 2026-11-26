@@ -1,6 +1,6 @@
-{% macro head(title, stylesheet='css/style.css') %}
+{% macro head(title, stylesheet='css/style.css', viewport_extra='') %}
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1{{ viewport_extra }}">
 <title>{{ title }} | Velora</title>
 <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,3 +35,26 @@
 
 {# Katrori me ngjyrën e lëndës; ngjyra e vjetër e parazgjedhur merr theksin #}
 {% macro square(color) %}<span class="sq" {% if color|lower != '#6c63ff' %}style="--sq: {{ color }}"{% endif %} aria-hidden="true"></span>{% endmacro %}
+
+{% macro bar(percent) %}<span class="bar" aria-hidden="true"><span style="width: {{ percent }}%"></span></span>{% endmacro %}
+
+{# "Shto material": me një lëndë shkon drejt te forma, me më shumë së pari zgjidhet lënda #}
+{% macro add_material(subjects, place) %}
+{% set item = 'sheet-item' if place == 'sheet' else 'button-outline' %}
+{% if subjects|length > 1 %}
+<details class="picker picker-{{ place }}">
+  <summary class="{{ item }}">Shto material</summary>
+  <div class="picker-list">
+    <p class="hint">Te cila lëndë?</p>
+    {% for subject in subjects %}
+    <a href="{{ url_for('main.subject_detail', subject_id=subject.id, _anchor='shto-material') }}">{{ square(subject.color) }}{{ subject.name }}</a>
+    {% endfor %}
+  </div>
+</details>
+{% elif subjects %}
+<a class="{{ item }}" href="{{ url_for('main.subject_detail', subject_id=subjects[0].id, _anchor='shto-material') }}">Shto material</a>
+{% else %}
+{# Materiali ka nevojë për lëndë, prandaj së pari hapet forma e lëndës #}
+<a class="{{ item }}" href="{{ url_for('main.create_subject') }}" title="Së pari krijo një lëndë">Shto material</a>
+{% endif %}
+{% endmacro %}

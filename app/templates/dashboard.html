@@ -1,75 +1,125 @@
 {% extends "base.html" %}
 {% import "_macros.html" as ui %}
+{% import "partials/_lists.html" as lists %}
 {% block title %}Paneli{% endblock %}
 {% block head_extra %}
   <script src="{{ url_for('static', filename='js/owl-eyes.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
 {% endblock %}
+{% block main_class %}wide{% endblock %}
 {% block content %}
 {% set first_name = current_user.full_name.split()[0] %}
+{% set untested = rows|selectattr('quizzes', 'equalto', 0)|list|length %}
 <div class="dash">
-  {% with plain = true %}{% include "partials/_owl.html" %}{% endwith %}
-  <h1>Paneli</h1>
-  <p class="sub" data-greeting="{{ first_name }}">Mirë se erdhe, {{ first_name }}.</p>
+  <p class="crumbs desktop-only">Velora / Paneli</p>
 
-  <dl class="props">
-    <dt>Lëndë</dt><dd>{{ subjects|length }}</dd>
-    <dt>Materiale</dt><dd>{{ total_materials }}</dd>
-    <dt>Teste të zgjidhura</dt><dd>{{ attempt_count }}</dd>
-    <dt>Mesatarja</dt><dd>{{ '%d%%'|format(average_score) if average_score is not none else '—' }}</dd>
+  <header class="dash-head">
+    {% with plain = true %}{% include "partials/_owl.html" %}{% endwith %}
+    <div class="dash-title">
+      <h1 data-greeting="{{ first_name }}">Mirë se erdhe, {{ first_name }}.</h1>
+      <p class="muted">{{ today_label }}{% if untested %} · ke {{ untested }} lëndë pa test{% endif %}</p>
+    </div>
+    <div class="dash-actions desktop-only">
+      {{ ui.add_material(side.subjects, 'header') }}
+      <a class="button" href="{{ url_for('main.create_subject') }}">+ Lëndë e re</a>
+    </div>
+  </header>
+
+  <dl class="stats">
+    {% for label, value, note, tone in stats %}
+    <div>
+      <dt>{{ label }}</dt>
+      <dd class="stat-value">{{ value }}</dd>
+      <dd class="stat-note {{ tone }}" title="{{ note }}">{{ note }}</dd>
+    </div>
+    {% endfor %}
   </dl>
 
-  <section aria-labelledby="subjects-title">
-    <div class="h2">
-      <h2 id="subjects-title">Lëndët</h2>
-      {% if subjects %}<a class="button" href="{{ url_for('main.create_subject') }}">Lëndë e re</a>{% endif %}
-    </div>
-    {% if subjects %}
-    <table>
-      <thead>
-        <tr><th scope="col">Emri</th><th scope="col" class="col-materials">Materiale</th><th scope="col" class="col-narrow">Teste</th><th scope="col" class="col-last hide">Testi i fundit</th></tr>
-      </thead>
-      <tbody>
-        {% for subject in subjects %}
-        {% set last = last_attempts.get(subject.id) %}
-        <tr>
-          <td>
-            <a class="nm" href="{{ url_for('main.subject_detail', subject_id=subject.id) }}">{{ ui.square(subject.color) }}{{ subject.name }}</a>
-            {% if subject.description %}<span class="ds">{{ subject.description }}</span>{% endif %}
-          </td>
-          <td>{{ subject.materials|length }}</td>
-          <td>{% if subject.quizzes %}{{ subject.quizzes|length }}{% else %}<span class="tag tag-warn">0</span>{% endif %}</td>
-          {% if last %}
-          <td class="hide">{{ ui.score_tag(last) }} {{ last.created_at.strftime('%d.%m.%Y') }}</td>
-          {% else %}
-          <td class="hide none">Asnjë ende</td>
-          {% endif %}
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    <a class="add" href="{{ url_for('main.create_subject') }}">+ Lëndë e re</a>
-    {% else %}
-    <div class="blank">
-      <p>Ende nuk ke asnjë lëndë.</p>
-      <a class="button" href="{{ url_for('main.create_subject') }}">Lëndë e re</a>
-    </div>
-    {% endif %}
-  </section>
+  <div class="dash-columns">
+    <div class="dash-main">
+      <section aria-labelledby="subjects-title">
+        <div class="h2">
+          <h2 id="subjects-title">Lëndët <span class="pill">{{ rows|length }}</span></h2>
+        </div>
+        {{ lists.subjects(rows) }}
+      </section>
 
-  <section aria-labelledby="results-title">
-    <div class="h2">
-      <h2 id="results-title">Rezultatet e fundit</h2>
-      {% if attempts %}<a href="{{ url_for('main.history') }}">Gjithë historiku</a>{% endif %}
+      <section aria-labelledby="results-title">
+        <div class="h2">
+          <h2 id="results-title">Rezultatet e fundit <span class="pill">{{ attempt_count }}</span></h2>
+          {% if attempts %}<a class="more" href="{{ url_for('main.history') }}">Gjithë historiku</a>{% endif %}
+        </div>
+        {% if attempts %}
+        <table class="grid-table results">
+          <thead><tr><th scope="col">Testi</th><th scope="col" class="col-date">Data</th><th scope="col" class="col-score">Rezultati</th></tr></thead>
+          <tbody>
+            {% for attempt in attempts %}
+            {% set href = url_for('main.attempt_detail', attempt_id=attempt.id) %}
+            <tr>
+              <td class="c-name"><a class="cell-link" href="{{ href }}">{{ attempt.quiz.title }}<span class="ds">{{ attempt.quiz.subject.name }}</span></a></td>
+              <td class="c-date numeric"><a class="cell-link" href="{{ href }}" tabindex="-1" aria-hidden="true">{{ (attempt.created_at|local).strftime('%d.%m.%Y') }}</a></td>
+              <td class="c-score numeric"><a class="cell-link" href="{{ href }}" tabindex="-1">{{ attempt.score }}/{{ attempt.total_questions }} {{ ui.score_tag(attempt) }}</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="blank">Ende nuk ke zgjidhur asnjë test.</p>
+        {% endif %}
+      </section>
     </div>
-    {% for attempt in attempts %}
-    <a class="res" href="{{ url_for('main.attempt_detail', attempt_id=attempt.id) }}">
-      <span>{{ attempt.quiz.title }}<small>{{ attempt.quiz.subject.name }} · {{ attempt.created_at.strftime('%d.%m.%Y') }}</small></span>
-      <span class="res-score">{{ attempt.score }}/{{ attempt.total_questions }} {{ ui.score_tag(attempt) }}</span>
-    </a>
-    {% else %}
-    <p class="blank">Ende nuk ke zgjidhur asnjë test.</p>
-    {% endfor %}
-  </section>
+
+    <aside class="dash-side" aria-label="Përmbledhje">
+      <section class="box todo" aria-labelledby="todo-title">
+        <h2 id="todo-title">Për të bërë {% if todo %}<span class="pill">{{ todo|length }}</span>{% endif %}</h2>
+        {% if todo %}
+        <ul>
+          {% for item in todo %}
+          <li>
+            {% if item.kind == 'create' %}
+            <strong>Krijo test për {{ item.subject.name }}</strong>
+            <span class="muted">{{ ui.count(item.materials, 'material', 'materiale') }} pa test</span>
+            <a href="{{ url_for('main.subject_detail', subject_id=item.subject.id, _anchor='krijo-test') }}">Krijo testin →</a>
+            {% else %}
+            <strong>Përsërit {{ item.subject.name }}</strong>
+            <span class="muted">Testi i fundit para {{ item.days }} ditësh</span>
+            <a href="{{ url_for('main.quiz_detail', quiz_id=item.quiz_id) }}">Prova përsëri →</a>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">Je në rregull. Asgjë për sot.</p>
+        {% endif %}
+      </section>
+
+      <section class="box averages desktop-only" aria-labelledby="averages-title">
+        <h2 id="averages-title">Mesatarja sipas lëndës</h2>
+        {% if rows %}
+        <ul>
+          {% for row in rows %}
+          <li>
+            <span class="name" title="{{ row.subject.name }}">{{ ui.square(row.subject.color) }}{{ row.subject.name }}</span>
+            {{ ui.bar(row.average or 0) }}
+            <span class="value numeric">{{ '%d%%'|format(row.average) if row.average is not none else '–' }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">Ende nuk ke asnjë lëndë.</p>
+        {% endif %}
+      </section>
+
+      <section class="box activity desktop-only" aria-labelledby="activity-title">
+        <h2 id="activity-title">Aktiviteti · 8 javë</h2>
+        <div class="heat" role="img" aria-label="{{ activity|sum(attribute='count') }} veprime në 8 javët e fundit: materiale të shtuara dhe teste të përfunduara">
+          {% for cell in activity %}
+          <span class="l{{ cell.level }}{% if cell.future %} future{% endif %}" {% if not cell.future %}title="{{ cell.date.strftime('%d.%m') }}: {{ ui.count(cell.count, 'veprim', 'veprime') }}"{% endif %}></span>
+          {% endfor %}
+        </div>
+        <p class="legend" aria-hidden="true">më pak <span class="l0"></span><span class="l1"></span><span class="l2"></span><span class="l3"></span> më shumë</p>
+      </section>
+    </aside>
+  </div>
 </div>
 {% endblock %}

@@ -42,20 +42,35 @@
   });
   showTheme(root.dataset.theme);
 
-  /* Menyja në telefon */
-  const sidebar = document.getElementById('sidebar');
-  const menuButton = sidebar?.querySelector('.menu');
-
-  function setMenu(open) {
-    sidebar.classList.toggle('open', open);
-    menuButton.setAttribute('aria-expanded', String(open));
+  /* Fleta "+" në telefon */
+  const sheet = document.getElementById('add-sheet');
+  const sheetButton = document.querySelector('[data-sheet-open]');
+  if (sheet?.showModal && sheetButton) {
+    sheetButton.setAttribute('role', 'button');
+    sheetButton.setAttribute('aria-haspopup', 'dialog');
+    sheetButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      sheet.showModal();
+    });
+    sheet.addEventListener('click', (event) => {
+      // Mbyllet nga butoni, nga një lidhje ose nga prekja jashtë fletës.
+      const outside = event.target === sheet && event.clientY < sheet.getBoundingClientRect().top;
+      if (outside || event.target.closest('a, [data-sheet-close]')) sheet.close();
+    });
+    window.matchMedia('(min-width: 900px)').addEventListener('change', (query) => {
+      if (query.matches && sheet.open) sheet.close();
+    });
   }
 
-  menuButton?.addEventListener('click', () => setMenu(!sidebar.classList.contains('open')));
-  sidebar?.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape' || !sidebar.classList.contains('open')) return;
-    setMenu(false);
-    menuButton.focus();
+  /* Lista e lëndëve te "Shto material" mbyllet me Escape ose me klikim jashtë */
+  const headerPicker = document.querySelector('.picker-header');
+  document.addEventListener('click', (event) => {
+    if (headerPicker && !headerPicker.contains(event.target)) headerPicker.open = false;
+  });
+  headerPicker?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !headerPicker.open) return;
+    headerPicker.open = false;
+    headerPicker.querySelector('summary').focus();
   });
 
   /* Lidhjet si #shto-material hapin seksionin përkatës */
@@ -64,6 +79,10 @@
     if (target?.tagName === 'DETAILS') target.open = true;
   }
   window.addEventListener('hashchange', openTarget);
+  // Edhe kur adresa e ka tashmë atë #, prandaj nuk ndodh "hashchange".
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('a[href*="#"]')) setTimeout(openTarget);
+  });
   openTarget();
 
   /* Mesazhet dhe butoni "Kthehu mbrapa" */

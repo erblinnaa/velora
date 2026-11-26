@@ -22,9 +22,22 @@ from werkzeug.utils import secure_filename
 from .ai_service import AIServiceError, generate_quiz, summarize_material
 from .extensions import db
 from .models import Material, Quiz, QuizAttempt, Subject, User
+from .overview import (
+    activity_grid,
+    average_percent,
+    local_date,
+    local_time,
+    local_today,
+    long_date,
+    quiz_title,
+    subject_rows,
+    todo_items,
+)
 
 
 main_bp = Blueprint("main", __name__)
+# Në shabllone: (data|local).strftime(...)
+main_bp.add_app_template_filter(local_time, "local")
 
 EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 # I njëjti kufi që kontrollon shërbimi AI para përpunimit.
@@ -220,41 +233,90 @@ def settings():
     return render_template("settings.html")
 
 
-@main_bp.get("/dashboard")
-@login_required
-def dashboard():
+def subjects_and_attempts():
+    """Lëndët e studentit dhe përpjekjet e tij, nga më të rejat."""
     subjects = (
         Subject.query.filter_by(user_id=current_user.id)
         .order_by(Subject.created_at.desc())
         .all()
     )
-
-    all_attempts = (
+    attempts = (
         QuizAttempt.query.filter_by(user_id=current_user.id)
         .order_by(QuizAttempt.created_at.desc())
         .all()
     )
-    ratios = [
-        attempt.score / attempt.total_questions
-        for attempt in all_attempts
-        if attempt.total_questions
+    return subjects, attempts
+
+
+def subjects_note(rows):
+    if not rows:
+        return "asnjë ende"
+    untested = sum(not row["quizzes"] for row in rows)
+    return f"{untested} pa test" if untested else "të gjitha me test"
+
+
+def materials_note(rows):
+    top = max(rows, key=lambda row: row["materials"], default=None)
+    if not top or not top["materials"]:
+        return "asnjë ende"
+    return f"shumica te {top['subject'].name}"
+
+
+def attempts_note(attempts):
+    """`attempts` vjen nga më e reja."""
+    if not attempts:
+        return "asnjë ende"
+    return f"i fundit më {local_date(attempts[0].created_at).strftime('%d.%m')}"
+
+
+def average_note(average):
+    """Shënimi nën mesataren dhe klasa e ngjyrës së tij."""
+    if average is None:
+        return "ende pa teste", ""
+    if average >= 90:
+        return "shkëlqyeshëm", "good"
+    if average >= 70:
+        return "mirë", ""
+    if average >= 50:
+        return "mesatare", ""
+    return "ka vend për përmirësim", ""
+
+
+@main_bp.get("/dashboard")
+@login_required
+def dashboard():
+    subjects, attempts = subjects_and_attempts()
+    materials = [material for subject in subjects for material in subject.materials]
+    average = average_percent(attempts)
+    today = local_today()
+    rows = subject_rows(subjects, attempts)
+
+    # (etiketa, numri, shënimi, klasa e shënimit)
+    stats = [
+        ("Lëndë", len(subjects), subjects_note(rows), ""),
+        ("Materiale", len(materials), materials_note(rows), ""),
+        ("Teste të zgjidhura", len(attempts), attempts_note(attempts), ""),
+        ("Mesatarja", "–" if average is None else f"{average}%", *average_note(average)),
     ]
-
-    total_materials = sum(len(subject.materials) for subject in subjects)
-
-    # Përpjekjet vijnë nga më e reja, prandaj e para për çdo lëndë është e fundit.
-    last_attempts = {}
-    for attempt in all_attempts:
-        last_attempts.setdefault(attempt.quiz.subject_id, attempt)
 
     return render_template(
         "dashboard.html",
-        subjects=subjects,
-        attempts=all_attempts[:5],
-        attempt_count=len(all_attempts),
-        average_score=round(sum(ratios) / len(ratios) * 100) if ratios else None,
-        total_materials=total_materials,
-        last_attempts=last_attempts,
+        rows=rows,
+        stats=stats,
+        attempts=attempts[:5],
+        attempt_count=len(attempts),
+        todo=todo_items(rows, today),
+        activity=activity_grid(subjects, attempts, today),
+        today_label=long_date(today),
+    )
+
+
+@main_bp.get("/subjects")
+@login_required
+def subject_list():
+    return render_template(
+        "subjects/list.html",
+        rows=subject_rows(*subjects_and_attempts()),
     )
 
 
@@ -510,7 +572,7 @@ def create_quiz(subject_id):
 
         quiz = Quiz(
             subject=subject,
-            title=f"Test: {material.title}"[:180],
+            title=quiz_title(material.title),
             questions_json=questions,
         )
 

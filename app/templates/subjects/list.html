@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% import "partials/_lists.html" as lists %}
+{% block title %}Lëndët{% endblock %}
+{% block content %}
+<h1>Lëndët</h1>
+<p class="sub">Të gjitha lëndët e tua, me materialet e testuara dhe rezultatin e fundit.</p>
+<div class="list-page">
+  {{ lists.subjects(rows) }}
+</div>
+{% endblock %}

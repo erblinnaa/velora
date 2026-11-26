@@ -1,18 +1,17 @@
 {# Korniza e faqeve për përdoruesit e kyçur #}
 {% import "_macros.html" as ui %}
+{% set side = sidebar_data() %}
 <!doctype html>
 <html lang="sq" data-theme="{{ current_user.theme if current_user.theme in ['dark', 'light'] else 'light' }}">
 <head>
   {% set page_title %}{% block title %}Studim{% endblock %}{% endset %}
-  {{ ui.head(page_title) }}
+  {{ ui.head(page_title, viewport_extra=', viewport-fit=cover') }}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shell.css') }}">
   {% block head_extra %}{% endblock %}
   <script>
     // Para shfaqjes së faqes: llogaria vendos temën dhe shfletuesi e mban mend.
     (function () {
-      var root = document.documentElement;
-      root.classList.add('js');
-      try { localStorage.setItem('velora-theme', root.dataset.theme); } catch (e) {}
+      try { localStorage.setItem('velora-theme', document.documentElement.dataset.theme); } catch (e) {}
     })();
   </script>
   <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
@@ -20,9 +19,10 @@
 <body data-theme-url="{{ url_for('main.settings') }}" data-csrf="{{ csrf_token() }}">
   <a class="skip-link" href="#main">Kalo te përmbajtja</a>
 
+  {% include "partials/_topbar.html" %}
   <div class="app-shell">
     {% include "partials/_sidebar.html" %}
-    <main class="main-content" id="main">
+    <main class="main-content {% block main_class %}{% endblock %}" id="main">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         <div class="flash-stack">
@@ -38,5 +38,6 @@
       {% block content %}{% endblock %}
     </main>
   </div>
+  {% include "partials/_bottom_nav.html" %}
 </body>
 </html>
