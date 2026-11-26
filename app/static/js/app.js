@@ -46,29 +46,19 @@
   showTheme(root.dataset.theme);
 
   /* Menyja në telefon */
-  const toggle = document.querySelector('[data-nav-toggle]');
   const sidebar = document.getElementById('sidebar');
-  const behindDrawer = document.querySelectorAll('.topbar, .main-content');
+  const menuButton = sidebar?.querySelector('.menu');
 
-  function setNav(open) {
-    if (!toggle || body.classList.contains('nav-open') === open) return;
-    body.classList.toggle('nav-open', open);
-    toggle.setAttribute('aria-expanded', String(open));
-    behindDrawer.forEach((element) => { element.inert = open; });
-    if (open) {
-      sidebar.querySelector('.nav-link')?.focus();
-    } else {
-      toggle.focus();
-    }
+  function setMenu(open) {
+    sidebar.classList.toggle('open', open);
+    menuButton.setAttribute('aria-expanded', String(open));
   }
 
-  toggle?.addEventListener('click', () => setNav(true));
-  document.querySelector('[data-nav-close]')?.addEventListener('click', () => setNav(false));
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') setNav(false);
-  });
-  window.matchMedia('(min-width: 761px)').addEventListener('change', (query) => {
-    if (query.matches) setNav(false);
+  menuButton?.addEventListener('click', () => setMenu(!sidebar.classList.contains('open')));
+  sidebar?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !sidebar.classList.contains('open')) return;
+    setMenu(false);
+    menuButton.focus();
   });
 
   /* Mesazhet dhe butoni "Kthehu mbrapa" */

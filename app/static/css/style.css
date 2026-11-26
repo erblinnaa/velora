@@ -88,26 +88,9 @@ a:hover { color: var(--accent-hover); }
 .button-secondary:hover { background: var(--paper-deep); color: var(--ink); border-color: var(--ink-soft); }
 
 /* Korniza */
-.app-shell { display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); min-height: 100vh; }
-.sidebar {
-  position: sticky; top: 0; height: 100vh;
-  display: flex; flex-direction: column; gap: 28px;
-  padding: 24px 16px;
-  background: var(--paper-deep); border-right: 1px solid var(--line);
-  overflow-y: auto;
-}
 .brand { display: inline-flex; align-items: center; gap: 10px; font: 600 1.5rem/1 var(--serif); color: var(--ink); text-decoration: none; padding: 0 12px; }
 .brand-mark { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--radius); background: var(--accent); color: var(--accent-ink); font-size: 1.2rem; }
 .brand:hover { color: var(--ink); }
-.side-nav { display: grid; gap: 2px; }
-.nav-link {
-  padding: 9px 12px; border-radius: var(--radius);
-  color: var(--ink-soft); text-decoration: none; border: 1px solid transparent;
-}
-.nav-link:hover { color: var(--ink); background: var(--surface); }
-.nav-link[aria-current="page"] { color: var(--ink); background: var(--surface); border-color: var(--line); font-weight: 600; }
-.sidebar-bottom { margin-top: auto; display: grid; gap: 20px; }
-
 .theme-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 2px; margin: 0; border: 1px solid var(--line-strong); border-radius: var(--radius); }
 .theme-switch button {
   min-height: 32px; border: 0; border-radius: 4px; background: transparent;
@@ -116,12 +99,8 @@ a:hover { color: var(--accent-hover); }
 .theme-switch button:hover { color: var(--ink); }
 .theme-switch button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 
-.account { padding: 16px 12px 0; border-top: 1px solid var(--line); font-size: .875rem; overflow-wrap: anywhere; }
-.account strong { display: block; font-weight: 600; }
-.account span { display: block; color: var(--ink-soft); font-size: .8125rem; }
 .link-button { margin-top: 10px; padding: 0; border: 0; background: none; color: var(--accent); font: 500 .875rem var(--sans); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 
-.topbar, .scrim { display: none; }
 .main-content { padding: 48px clamp(20px, 5vw, 64px) 80px; }
 .page { max-width: 1040px; }
 
@@ -301,21 +280,6 @@ input[type="radio"] { accent-color: var(--accent); width: 18px; height: 18px; ma
 }
 
 @media (max-width: 760px) {
-  .app-shell { display: block; }
-  .topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 30; height: 60px; padding: 0 16px;
-    background: var(--paper-deep); border-bottom: 1px solid var(--line);
-  }
-  .topbar .brand { padding: 0; }
-  .sidebar {
-    position: fixed; z-index: 50; inset: 0 auto 0 0; width: min(300px, 86vw); height: 100dvh;
-    transform: translateX(-100%); visibility: hidden;
-    transition: transform .2s ease, visibility .2s;
-  }
-  .nav-open .sidebar { transform: none; visibility: visible; box-shadow: 0 0 32px rgb(0 0 0 / .22); }
-  .nav-open .scrim { display: block; position: fixed; inset: 0; z-index: 40; background: rgb(0 0 0 / .4); }
-  .nav-open { overflow: hidden; }
   .main-content { padding: 28px 16px 56px; }
   h1 { font-size: 1.65rem; }
   .step { grid-template-columns: 44px minmax(0, 1fr); gap: 4px 14px; padding-right: 16px; }

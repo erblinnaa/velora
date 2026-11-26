@@ -16,6 +16,7 @@ from flask_login import (
     logout_user,
 )
 from pypdf import PdfReader
+from sqlalchemy import func
 from werkzeug.utils import secure_filename
 
 from .ai_service import AIServiceError, generate_quiz, summarize_material
@@ -87,6 +88,29 @@ def owned_quiz(quiz_id):
         )
         .first_or_404()
     )
+
+
+@main_bp.app_context_processor
+def sidebar_context():
+    def sidebar_data():
+        """Lëndët dhe numrat për shiritin anësor, pa ngarkuar tekstin e materialeve."""
+        subjects = (
+            db.session.query(
+                Subject.id,
+                Subject.name,
+                Subject.color,
+                func.count(Material.id).label("material_count"),
+            )
+            .outerjoin(Material, Material.subject_id == Subject.id)
+            .filter(Subject.user_id == current_user.id)
+            .group_by(Subject.id)
+            .order_by(Subject.created_at.desc())
+            .all()
+        )
+        attempts = QuizAttempt.query.filter_by(user_id=current_user.id)
+        return {"subjects": subjects, "attempt_count": attempts.count()}
+
+    return {"sidebar_data": sidebar_data}
 
 
 @main_bp.route("/")
@@ -217,7 +241,11 @@ def dashboard():
     ]
 
     total_materials = sum(len(subject.materials) for subject in subjects)
-    total_quizzes = sum(len(subject.quizzes) for subject in subjects)
+
+    # Përpjekjet vijnë nga më e reja, prandaj e para për çdo lëndë është e fundit.
+    last_attempts = {}
+    for attempt in all_attempts:
+        last_attempts.setdefault(attempt.quiz.subject_id, attempt)
 
     return render_template(
         "dashboard.html",
@@ -226,7 +254,7 @@ def dashboard():
         attempt_count=len(all_attempts),
         average_score=round(sum(ratios) / len(ratios) * 100) if ratios else None,
         total_materials=total_materials,
-        total_quizzes=total_quizzes,
+        last_attempts=last_attempts,
     )
 
 

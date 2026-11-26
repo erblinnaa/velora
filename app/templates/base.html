@@ -5,10 +5,15 @@
 <head>
   {% set page_title %}{% block title %}Studim{% endblock %}{% endset %}
   {{ ui.head(page_title) }}
+  {% if signed_in %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/shell.css') }}">
+  {% endif %}
+  {% block head_extra %}{% endblock %}
   <script>
     // Para shfaqjes së faqes: llogaria vendos temën, përndryshe shfletuesi.
     (function () {
       var root = document.documentElement;
+      root.classList.add('js');
       try {
         {% if signed_in %}
         localStorage.setItem('velora-theme', root.dataset.theme);
@@ -21,7 +26,7 @@
   </script>
   <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 </head>
-<body {% if signed_in %}data-theme-url="{{ url_for('main.settings') }}" data-csrf="{{ csrf_token() }}"{% endif %}>
+<body class="{% block body_class %}{% endblock %}" {% if signed_in %}data-theme-url="{{ url_for('main.settings') }}" data-csrf="{{ csrf_token() }}"{% endif %}>
   {% set flashes %}
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -41,30 +46,7 @@
 
   {% if signed_in %}
   <div class="app-shell">
-    <header class="topbar">
-      {{ ui.brand(url_for('main.dashboard')) }}
-      <button type="button" class="button button-secondary" data-nav-toggle aria-controls="sidebar" aria-expanded="false">Menyja</button>
-    </header>
-    <div class="scrim" data-nav-close></div>
-    <aside class="sidebar" id="sidebar">
-      {{ ui.brand(url_for('main.dashboard')) }}
-      <nav class="side-nav" aria-label="Kryesore">
-        {% for endpoint, label in [('main.dashboard', 'Paneli'), ('main.history', 'Historiku'), ('main.settings', 'Cilësimet')] %}
-        <a class="nav-link" href="{{ url_for(endpoint) }}" {% if request.endpoint == endpoint %}aria-current="page"{% endif %}>{{ label }}</a>
-        {% endfor %}
-      </nav>
-      <div class="sidebar-bottom">
-        {{ ui.theme_switch() }}
-        <div class="account">
-          <strong>{{ current_user.full_name }}</strong>
-          <span>{{ current_user.email }}</span>
-          <form method="post" action="{{ url_for('main.logout') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="link-button" type="submit">Dil nga llogaria</button>
-          </form>
-        </div>
-      </div>
-    </aside>
+    {% include "partials/_sidebar.html" %}
     <main class="main-content" id="main">
       {{ flashes }}
       {% block content %}{% endblock %}

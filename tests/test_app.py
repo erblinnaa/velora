@@ -27,10 +27,10 @@ def register(client, email="student@example.com"):
 def test_register_and_login(client):
     response = register(client)
     assert response.status_code == 200
-    assert b"Paneli yt i studimit" in response.data
+    assert b"<h1>Paneli</h1>" in response.data
     client.post("/logout")
     response = client.post("/login", data={"email": "student@example.com", "password": "strong-pass-123"}, follow_redirects=True)
-    assert b"Paneli yt i studimit" in response.data
+    assert b"<h1>Paneli</h1>" in response.data
 
 
 def test_subject_and_material_flow(client):
